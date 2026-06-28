@@ -2411,12 +2411,14 @@ button {
   gap: 6px;
   justify-items: center;
   color: #fff;
-  font-size: 30px;
-  font-weight: 700;
+  font-size: 25px;
+  font-weight: 650;
 }
 
+/* The amount is the only value shown large; everything else stays modest. */
 .real-txd-card.amount strong {
   font-size: 38px;
+  font-weight: 760;
 }
 
 .real-txd-card strong small {
