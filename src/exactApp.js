@@ -1061,15 +1061,17 @@ function exactLogoSvg(token) {
 }
 
 function exactIcon(token, className = "") {
-  // Prefer the brand-accurate, plate-free vector coin (glossy hex + official
-  // glyph). This matches the intended Exodus look and stays crisp at any size.
-  const svg = exactLogoSvg(token);
-  if (svg) {
+  if (token.id === "tether" || token.symbol === "USDT") {
+    const svg = exactLogoSvg(token);
     return `<span class="exact-token-icon has-vector ${className}" style="--coin:${token.color}">${svg}</span>`;
   }
   const src = exactAssets[token.assetKey || token.id];
   if (src) {
     return `<span class="exact-token-icon has-image ${className}" style="--coin:${token.color}"><img src="${src}" alt="" /></span>`;
+  }
+  const svg = exactLogoSvg(token);
+  if (svg) {
+    return `<span class="exact-token-icon has-vector ${className}" style="--coin:${token.color}">${svg}</span>`;
   }
   return `<span class="exact-token-icon ${className}" style="--coin:${token.color}">${token.icon}</span>`;
 }

@@ -70,7 +70,7 @@ exactDebug.exactRender();
 for (const id of ["bitcoin", "ethereum", "bnb", "xrp", "solana", "tron", "dogecoin", "cardano"]) {
   const token = exactDebug.exactTokens.find((item) => item.id === id);
   assert.ok(token, `missing ${id}`);
-  assert.match(exactDebug.exactIcon(token), /has-vector/, `${id} should use a clean plate-free vector badge`);
+  assert.match(exactDebug.exactIcon(token), /has-image/, `${id} should use screenshot-style image badge`);
 }
 
 for (const [id, markClass] of Object.entries({
