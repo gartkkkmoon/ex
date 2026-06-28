@@ -1678,11 +1678,6 @@ function renderRealHome() {
   const portfolio = exactMoneyParts(total);
   const segments = exactRingSegments();
   const isEmpty = !total || total <= 0;
-  const statusLine = exactIsLive()
-    ? `<div class="real-live-status">${
-        exactRuntime.loading ? "Syncing balances…" : `Live · ${exactShortHash(exactRuntime.address)}`
-      }</div>`
-    : "";
   return `
     <main class="real-phone real-home exact-${exactState.device}">
       <div class="real-scroll">
@@ -1700,7 +1695,6 @@ function renderRealHome() {
               <b>${portfolio.whole}</b><small>.${portfolio.cents}</small>
             </span>
           </button>
-          ${statusLine}
           <button class="real-holdings-sort" data-action="holdings-sort">${exactHoldingsSortLabel()} <span>⌄</span></button>
           ${exactState.showHoldingsSort ? `
             <div class="real-holdings-menu">
