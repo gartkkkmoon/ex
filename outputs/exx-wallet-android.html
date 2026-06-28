@@ -2456,9 +2456,14 @@ button {
   font-weight: 720;
 }
 
-/* Simple pending indicator inside the balance ring */
+/* Simple pending indicator inside the balance ring — absolutely positioned
+   just below the centre so it never pushes the balance figure off-centre. */
 .real-portfolio-pending {
-  margin-top: 10px;
+  position: absolute;
+  left: 0;
+  right: 0;
+  top: 58%;
+  text-align: center;
   color: rgba(232, 233, 246, 0.6);
   font-size: 24px;
   font-weight: 600;
