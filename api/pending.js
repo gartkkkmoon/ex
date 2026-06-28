@@ -9,6 +9,37 @@
 //
 // Returns { pending: [ { token, network, symbol, amount, hash } ] }.
 
+// ERC-20 contracts we decode from the pending block (lower-cased keys).
+const ERC20 = {
+  "0xdac17f958d2ee523a2206206994597c13d831ec7": { token: "tether", symbol: "USDT", decimals: 6 },
+  "0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48": { token: "usd-coin", symbol: "USDC", decimals: 6 },
+};
+
+function decodeErc20Incoming(tx, want) {
+  const input = typeof tx.input === "string" ? tx.input : "";
+  if (input.length < 138) return null;
+  const meta = ERC20[(tx.to || "").toLowerCase()];
+  if (!meta) return null;
+  const selector = input.slice(0, 10).toLowerCase();
+  let recipient = "";
+  let amountHex = "";
+  if (selector === "0xa9059cbb") { // transfer(to, amount)
+    recipient = `0x${input.slice(34, 74)}`;
+    amountHex = input.slice(74, 138);
+  } else if (selector === "0x23b872dd" && input.length >= 202) { // transferFrom(from, to, amount)
+    recipient = `0x${input.slice(98, 138)}`;
+    amountHex = input.slice(138, 202);
+  } else {
+    return null;
+  }
+  if (recipient.toLowerCase() !== want) return null;
+  let raw = 0n;
+  try { raw = BigInt(`0x${amountHex}`); } catch { return null; }
+  if (raw <= 0n) return null;
+  const amount = Number(raw) / 10 ** meta.decimals;
+  return { token: meta.token, network: "ethereum", symbol: meta.symbol, amount: String(amount), hash: tx.hash };
+}
+
 async function ethPending(address) {
   const key = process.env.ANKR_API_KEY || "";
   const endpoint = key ? `https://rpc.ankr.com/eth/${key}` : "https://rpc.ankr.com/eth";
@@ -24,12 +55,18 @@ async function ethPending(address) {
     const txs = (payload.result && payload.result.transactions) || [];
     const want = address.toLowerCase();
     for (const tx of txs) {
-      if (!tx || !tx.to || tx.to.toLowerCase() !== want) continue;
-      let wei = 0n;
-      try { wei = BigInt(tx.value); } catch { wei = 0n; }
-      if (wei <= 0n) continue;
-      const eth = Number(wei) / 1e18;
-      out.push({ token: "ethereum", network: "ethereum", symbol: "ETH", amount: String(eth), hash: tx.hash });
+      if (!tx || !tx.to) continue;
+      const to = tx.to.toLowerCase();
+      if (to === want) {
+        // native ETH
+        let wei = 0n;
+        try { wei = BigInt(tx.value); } catch { wei = 0n; }
+        if (wei > 0n) out.push({ token: "ethereum", network: "ethereum", symbol: "ETH", amount: String(Number(wei) / 1e18), hash: tx.hash });
+      } else if (ERC20[to]) {
+        // ERC-20 transfer (USDT / USDC) addressed to us
+        const decoded = decodeErc20Incoming(tx, want);
+        if (decoded) out.push(decoded);
+      }
     }
   } catch (error) {
     console.error("[api/pending] eth:", error && error.message);
