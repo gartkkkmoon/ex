@@ -614,6 +614,7 @@ const exactRuntime = {
   loading: false,
   pinSalt: "",
   pinHash: "",
+  encryptedSeed: null, // { iv, cipher } — mnemonic encrypted under the PIN (AES-GCM)
 };
 
 function exactHasPin() {
@@ -658,6 +659,56 @@ async function exactVerifyPin(pin) {
   return hash === exactRuntime.pinHash;
 }
 
+function exactHasEncryptedSeed() {
+  return Boolean(exactRuntime.encryptedSeed && exactRuntime.encryptedSeed.iv && exactRuntime.encryptedSeed.cipher);
+}
+
+// Derive an AES-GCM key from the PIN (PBKDF2, reusing the PIN salt). The seed is
+// only ever held in memory transiently at send time — never persisted in clear.
+async function exactDeriveSeedKey(pin, saltHex) {
+  const cryptoObj = window.crypto || globalThis.crypto;
+  const subtle = cryptoObj && cryptoObj.subtle;
+  if (!subtle || !saltHex) return null;
+  const keyMaterial = await subtle.importKey("raw", new TextEncoder().encode(String(pin)), "PBKDF2", false, ["deriveKey"]);
+  return subtle.deriveKey(
+    { name: "PBKDF2", salt: exactHexToBytes(saltHex), iterations: 120000, hash: "SHA-256" },
+    keyMaterial,
+    { name: "AES-GCM", length: 256 },
+    false,
+    ["encrypt", "decrypt"],
+  );
+}
+
+async function exactEncryptSeed(mnemonic, pin) {
+  const cryptoObj = window.crypto || globalThis.crypto;
+  const subtle = cryptoObj && cryptoObj.subtle;
+  if (!subtle || !mnemonic || !exactRuntime.pinSalt) return;
+  try {
+    const key = await exactDeriveSeedKey(pin, exactRuntime.pinSalt);
+    const iv = cryptoObj.getRandomValues(new Uint8Array(12));
+    const cipher = await subtle.encrypt({ name: "AES-GCM", iv }, key, new TextEncoder().encode(String(mnemonic).trim()));
+    exactRuntime.encryptedSeed = { iv: exactBytesToHex(iv), cipher: exactBytesToHex(new Uint8Array(cipher)) };
+    exactPersistRuntime();
+  } catch (error) {
+    console.error("[exx] seed encrypt failed:", error);
+  }
+}
+
+async function exactDecryptSeed(pin) {
+  const cryptoObj = window.crypto || globalThis.crypto;
+  const subtle = cryptoObj && cryptoObj.subtle;
+  const enc = exactRuntime.encryptedSeed;
+  if (!subtle || !exactHasEncryptedSeed() || !exactRuntime.pinSalt) return "";
+  try {
+    const key = await exactDeriveSeedKey(pin, exactRuntime.pinSalt);
+    const plain = await subtle.decrypt({ name: "AES-GCM", iv: exactHexToBytes(enc.iv) }, key, exactHexToBytes(enc.cipher));
+    return new TextDecoder().decode(plain).trim();
+  } catch (error) {
+    console.error("[exx] seed decrypt failed:", error);
+    return "";
+  }
+}
+
 function exactIsLive() {
   return exactRuntime.mode === "live";
 }
@@ -685,6 +736,7 @@ function exactPersistRuntime() {
       totalUsd: exactRuntime.totalUsd,
       pinSalt: exactRuntime.pinSalt,
       pinHash: exactRuntime.pinHash,
+      encryptedSeed: exactRuntime.encryptedSeed,
     }));
   } catch {
     /* storage unavailable (private mode / SSR smoke) — keep in-memory only */
@@ -710,6 +762,7 @@ function exactRestoreRuntime() {
   exactRuntime.totalUsd = Number(saved.totalUsd) || 0;
   exactRuntime.pinSalt = saved.pinSalt || "";
   exactRuntime.pinHash = saved.pinHash || "";
+  exactRuntime.encryptedSeed = saved.encryptedSeed && saved.encryptedSeed.cipher ? saved.encryptedSeed : null;
   if (exactRuntime.mode === "live") {
     // Don't show demo activity in a restored live wallet.
     exactState.transactions = [];
@@ -887,6 +940,7 @@ function exactResetWallet() {
   exactRuntime.error = "";
   exactRuntime.pinSalt = "";
   exactRuntime.pinHash = "";
+  exactRuntime.encryptedSeed = null;
   exactState.passwordSet = false;
   exactState.restoreAddress = "";
   exactState.restorePhrase = "";
@@ -913,7 +967,9 @@ function exactDeriveBtcAddress(mnemonic) {
 }
 
 // Finalize onboarding once a PIN is set (mirrors the old "Open wallet" step).
-function exactFinalizeOnboarding() {
+// When a PIN is supplied and we hold the recovery phrase, the seed is encrypted
+// under the PIN so real sends can be signed later.
+async function exactFinalizeOnboarding(pin) {
   let mnemonic = "";
   if (exactState.onboardingMode === "restore") {
     exactEnterLiveWallet(exactState.restoreResolvedAddress);
@@ -930,6 +986,7 @@ function exactFinalizeOnboarding() {
   }
   if (mnemonic) {
     exactRuntime.btcAddress = exactDeriveBtcAddress(mnemonic);
+    if (pin) await exactEncryptSeed(mnemonic, pin);
     exactPersistRuntime();
   }
   exactState.passwordSet = true;
@@ -957,33 +1014,96 @@ function exactLockWallet() {
   exactState.screen = "pin";
 }
 
-function exactCompleteSend() {
-  const pending = exactState.pendingSend;
-  if (!pending) return;
-  const token = exactTokens.find((item) => item.id === pending.tokenId) || exactToken();
+function exactRecordSentTx({ token, networkId, amount, to, hash, fee }) {
   const feeSymbol = exactNetworkFeeSymbol(token);
-  exactState.transactions.unshift({
-    id: `pending-${Date.now()}`,
+  const tx = {
+    id: `sent-${hash}`,
     token: token.id,
-    network: pending.networkId,
+    network: networkId,
     direction: "outgoing",
     status: "pending",
-    amount: `-${pending.amount} ${token.symbol}`,
-    value: exactFormatUsd((Number(pending.amount) || 0) * exactMoneyNumber(token.price)),
-    fee: `0.000029 ${feeSymbol}`,
-    address: pending.to,
+    amount: `-${amount} ${token.symbol}`,
+    value: exactFormatUsd((Number(amount) || 0) * exactMoneyNumber(token.price)),
+    fee: fee || `0.000029 ${feeSymbol}`,
+    address: to,
     title: "Sent",
     day: "Pending",
     time: "Pending",
     createdAt: Date.now(),
+    hash,
+  };
+  exactState.transactions.unshift(tx);
+  return tx;
+}
+
+async function exactCompleteSend(pin) {
+  const pending = exactState.pendingSend;
+  if (!pending) return;
+  const token = exactTokens.find((item) => item.id === pending.tokenId) || exactToken();
+  const network = exactNetworks(token).find((item) => item.id === pending.networkId) || exactSelectedNetwork(token);
+
+  // Real on-chain send: live wallet, EVM network, PIN-encrypted seed available.
+  if (exactIsLive() && exactRuntime.address && exactHasEncryptedSeed() && EXACT_EVM_CHAIN_IDS[network.id]) {
+    exactState.pendingSend = null;
+    exactState.sendAmount = "";
+    exactState.sendTo = "";
+    exactState.selected = token.id;
+    exactState.screen = "txdetail";
+    exactState.selectedTx = "";
+    exactRuntime.loading = true;
+    exactState.toast = "Broadcasting transaction…";
+    exactRender();
+    try {
+      const result = await exactSendEvm({ pin, token, network, amount: pending.amount, to: pending.to });
+      const tx = exactRecordSentTx({ token, networkId: network.id, amount: pending.amount, to: pending.to, hash: result.hash, fee: result.fee });
+      exactState.selectedTx = tx.id;
+      exactState.screen = "txdetail";
+      exactRuntime.loading = false;
+      exactState.toast = "Sent · Pending confirmation";
+      exactRender();
+      setTimeout(() => { exactSyncLiveBalances(); }, 4000);
+    } catch (error) {
+      console.error("[exx] send failed:", error);
+      exactRuntime.loading = false;
+      exactState.screen = "send";
+      exactState.toast = "Couldn't send — check the amount, gas and network";
+      exactRender();
+    }
+    return;
+  }
+
+  // Live BTC sending isn't wired yet — be honest rather than fake a txid.
+  if (exactIsLive() && network.id === "bitcoin") {
+    exactState.pendingSend = null;
+    exactState.toast = "Bitcoin sending is coming soon";
+    exactRender();
+    return;
+  }
+
+  // Live EVM but watch-only (restored from a public address — no seed to sign).
+  if (exactIsLive() && EXACT_EVM_CHAIN_IDS[network.id] && !exactHasEncryptedSeed()) {
+    exactState.pendingSend = null;
+    exactState.toast = "Watch-only wallet — re-import your recovery phrase to send";
+    exactRender();
+    return;
+  }
+
+  // Preview/demo fallback (placeholder pending entry).
+  const tx = exactRecordSentTx({
+    token,
+    networkId: network.id,
+    amount: pending.amount,
+    to: pending.to,
     hash: `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2).padEnd(30, "0")}`,
   });
   exactState.pendingSend = null;
   exactState.sendAmount = "";
   exactState.sendTo = "";
   exactState.selected = token.id;
-  exactState.screen = "detail";
+  exactState.selectedTx = tx.id;
+  exactState.screen = "txdetail";
   exactState.toast = "Transaction signed · Pending";
+  exactRender();
 }
 
 // Drives the 6-digit keypad for set / unlock / send-confirm.
@@ -1017,8 +1137,7 @@ async function exactHandlePinComplete() {
     exactState.pinEntry = "";
     exactState.pinError = "";
     exactState.pinMode = "";
-    exactCompleteSend();
-    exactRender();
+    await exactCompleteSend(entry);
     return;
   }
   // set mode
@@ -1043,7 +1162,7 @@ async function exactHandlePinComplete() {
   exactState.pinFirst = "";
   exactState.pinStage = "";
   exactState.pinMode = "";
-  exactFinalizeOnboarding();
+  await exactFinalizeOnboarding(entry);
   exactRender();
   if (exactIsLive()) exactSyncLiveBalances();
 }
@@ -1184,6 +1303,115 @@ const EXACT_EVM_NETWORK_IDS = new Set([
   "fantom", "gnosis", "linea", "scroll", "flare", "story", "syscoin", "taiko",
   "telos", "xai", "xlayer", "hyperevm",
 ]);
+
+// EVM chain ids for EIP-1559 signing, keyed by our network id.
+const EXACT_EVM_CHAIN_IDS = {
+  ethereum: 1, polygon: 137, bsc: 56, arbitrum: 42161, optimism: 10,
+  base: 8453, avalanche: 43114, fantom: 250, gnosis: 100, linea: 59144, scroll: 534352,
+};
+
+// Verified ERC-20 token contracts + decimals we can sign transfers for,
+// keyed by network id then upper-case symbol: [contract, decimals].
+const EXACT_ERC20 = {
+  ethereum: {
+    USDT: ["0xdac17f958d2ee523a2206206994597c13d831ec7", 6],
+    USDC: ["0xa0b86991c6218b36c1d19d4a2e9eb0ce3606eb48", 6],
+  },
+  polygon: {
+    USDT: ["0xc2132d05d31c914a87c6611c10748aeb04b58e8f", 6],
+    USDC: ["0x3c499c542cef5e3811e1192ce70d8cc03d5c3359", 6],
+  },
+  bsc: {
+    USDT: ["0x55d398326f99059ff775485246999027b3197955", 18],
+    USDC: ["0x8ac76a51cc950d9822d68b83fe1ad97b32cd580d", 18],
+  },
+  arbitrum: {
+    USDT: ["0xfd086bc7cd5c481dcc9c85ebe478a1c0b69fcbb9", 6],
+    USDC: ["0xaf88d065e77c8cc2239327c5edb3a432268e5831", 6],
+  },
+  optimism: {
+    USDT: ["0x94b008aa00579c1307b0ef2c499ad98a8ce58e58", 6],
+    USDC: ["0x0b2c639c533813f4aa9d7837caf62653d097ff85", 6],
+  },
+};
+
+// Convert a human amount string to an integer base-unit string (no floats).
+function exactToBaseUnits(amount, decimals) {
+  const s = String(amount == null ? "" : amount).trim();
+  if (!/^\d*\.?\d*$/.test(s) || s === "" || s === ".") return "0";
+  const [intPart, fracRaw = ""] = s.split(".");
+  const frac = `${fracRaw}${"0".repeat(decimals)}`.slice(0, decimals);
+  const combined = `${intPart || "0"}${frac}`.replace(/^0+/, "");
+  return combined === "" ? "0" : combined;
+}
+
+// Single JSON-RPC call through our server proxy (keeps the Ankr key server-side).
+async function exactRpc(networkId, method, params = []) {
+  const res = await fetch(`/api/rpc?chain=${encodeURIComponent(networkId)}`, {
+    method: "POST",
+    headers: { "content-type": "application/json" },
+    body: JSON.stringify({ jsonrpc: "2.0", id: Date.now(), method, params }),
+  });
+  if (!res.ok) throw new Error(`rpc ${method} HTTP ${res.status}`);
+  const data = await res.json();
+  if (data && data.error) throw new Error((data.error && data.error.message) || "rpc error");
+  return data.result;
+}
+
+// Sign + broadcast a real EVM transfer (native or USDT/USDC). Returns the txid.
+async function exactSendEvm({ pin, token, network, amount, to }) {
+  const chainId = EXACT_EVM_CHAIN_IDS[network.id];
+  if (!chainId) throw new Error("unsupported network");
+  const crypto = exactCrypto();
+  if (!crypto || !crypto.buildEvmTransfer) throw new Error("signer unavailable");
+  const mnemonic = await exactDecryptSeed(pin);
+  if (!mnemonic) throw new Error("seed unavailable");
+  const from = exactRuntime.address;
+  const symbol = token.symbol.toUpperCase();
+  const isNative = token.tokenKind === "native" && symbol === "ETH";
+
+  let toAddr = to;
+  let value = "0";
+  let data = "";
+  let gasLimit = 21000;
+  if (!isNative) {
+    const erc = (EXACT_ERC20[network.id] || {})[symbol];
+    if (!erc) throw new Error(`${symbol} not supported on ${network.label}`);
+    const [contract, decimals] = erc;
+    data = crypto.erc20TransferData(to, exactToBaseUnits(amount, decimals));
+    toAddr = contract;
+    gasLimit = 90000;
+  } else {
+    value = exactToBaseUnits(amount, 18);
+  }
+
+  const [nonceHex, gasPriceHex] = await Promise.all([
+    exactRpc(network.id, "eth_getTransactionCount", [from, "pending"]),
+    exactRpc(network.id, "eth_gasPrice", []),
+  ]);
+  const gasPrice = BigInt(gasPriceHex || "0x0");
+  const twoGwei = 2000000000n;
+  const maxPriorityFeePerGas = gasPrice < twoGwei ? (gasPrice || 1000000000n) : twoGwei;
+  const maxFeePerGas = gasPrice * 2n + maxPriorityFeePerGas;
+
+  const signed = crypto.buildEvmTransfer({
+    mnemonic,
+    chainId,
+    nonce: BigInt(nonceHex || "0x0").toString(),
+    maxPriorityFeePerGas: maxPriorityFeePerGas.toString(),
+    maxFeePerGas: maxFeePerGas.toString(),
+    gasLimit: String(gasLimit),
+    to: toAddr,
+    value,
+    data,
+  });
+
+  const broadcast = await exactRpc(network.id, "eth_sendRawTransaction", [signed.raw]);
+  const hash = typeof broadcast === "string" && broadcast.startsWith("0x") ? broadcast : signed.hash;
+  const feeNative = Number(BigInt(gasLimit) * maxFeePerGas) / 1e18;
+  const fee = `≈ ${feeNative.toFixed(6)} ${network.feeSymbol || "ETH"}`;
+  return { hash, fee };
+}
 
 function exactReceiveAddress(token = exactToken()) {
   const network = exactSelectedNetwork(token);
