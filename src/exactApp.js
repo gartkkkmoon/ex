@@ -1650,21 +1650,7 @@ function realAssetRow(token, options = {}) {
   `;
 }
 
-function exactTokenPendingTxs(tokenId) {
-  return exactState.transactions.filter((tx) => tx.token === tokenId && tx.status === "pending");
-}
-
-// Net pending amount (native units) for a token: incoming counts +, outgoing -.
-function exactTokenPendingNative(tokenId) {
-  let net = 0;
-  for (const tx of exactTokenPendingTxs(tokenId)) {
-    const num = parseFloat(String(tx.amount).replace(/[^0-9.]/g, ""));
-    if (Number.isFinite(num)) net += tx.direction === "incoming" ? num : -num;
-  }
-  return net;
-}
-
-// Portfolio-wide pending totals in USD.
+// Portfolio-wide pending totals in USD. Net is added into the displayed total.
 function exactPendingSummary() {
   let inUsd = 0;
   let outUsd = 0;
@@ -1673,29 +1659,16 @@ function exactPendingSummary() {
     const value = exactMoneyNumber(tx.value);
     if (tx.direction === "incoming") inUsd += value; else outUsd += value;
   }
-  return { inUsd, outUsd, has: inUsd > 0 || outUsd > 0 };
-}
-
-function exactPendingStrip() {
-  const pending = exactPendingSummary();
-  if (!pending.has) return "";
-  const parts = [];
-  if (pending.inUsd > 0) parts.push(`<span class="in">↓ ${exactFormatUsd(pending.inUsd)} pending in</span>`);
-  if (pending.outUsd > 0) parts.push(`<span class="out">↑ ${exactFormatUsd(pending.outUsd)} pending out</span>`);
-  return `<div class="real-pending-strip">${parts.join("")}</div>`;
+  return { inUsd, outUsd, net: inUsd - outUsd, has: inUsd > 0 || outUsd > 0 };
 }
 
 function realHoldingRow(token) {
-  const net = exactTokenPendingNative(token.id);
-  const pendingPill = net
-    ? `<em class="real-pending-pill ${net > 0 ? "in" : "out"}">● ${net > 0 ? "+" : "−"}${exactFormatAmount(Math.abs(net))} ${token.symbol} pending</em>`
-    : "";
   return `
     <button class="real-holding-row" data-action="detail" data-token="${token.id}">
       ${exactIcon(token)}
       <span class="real-holding-name">
         <strong>${token.symbol}</strong>
-        ${pendingPill || `<small>${token.name}</small>`}
+        <small>${token.name}</small>
       </span>
       <span class="real-holding-value">
         <strong style="color:${token.color}">${exactTokenBalance(token)} ${token.symbol}</strong>
@@ -1984,7 +1957,9 @@ function renderRealPin() {
 
 function renderRealHome() {
   const enabled = exactSortedEnabledTokens();
-  const total = exactPortfolioValue();
+  const pending = exactPendingSummary();
+  // Pending receives/sends are folded into the headline total (Exodus-style).
+  const total = exactPortfolioValue() + pending.net;
   const portfolio = exactMoneyParts(total);
   const segments = exactRingSegments();
   const isEmpty = !total || total <= 0;
@@ -2004,8 +1979,8 @@ function renderRealHome() {
             <span class="real-portfolio-amount">
               <b>${portfolio.whole}</b><small>.${portfolio.cents}</small>
             </span>
+            ${pending.has ? `<span class="real-portfolio-pending">pending…</span>` : ""}
           </button>
-          ${exactPendingStrip()}
           <button class="real-holdings-sort" data-action="holdings-sort">${exactHoldingsSortLabel()} <span>⌄</span></button>
           ${exactState.showHoldingsSort ? `
             <div class="real-holdings-menu">

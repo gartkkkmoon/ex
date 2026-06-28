@@ -2448,35 +2448,11 @@ button {
   font-weight: 720;
 }
 
-/* Pending reflection on the dashboard */
-.real-pending-strip {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 10px 22px;
-  margin: 16px auto 2px;
-  font-size: 22px;
-  font-weight: 650;
-}
-
-.real-pending-strip .in {
-  color: #57e0a6;
-}
-
-.real-pending-strip .out {
-  color: #ffce54;
-}
-
-.real-pending-pill {
-  font-style: normal;
-  font-size: 19px;
-  font-weight: 700;
-}
-
-.real-pending-pill.in {
-  color: #57e0a6;
-}
-
-.real-pending-pill.out {
-  color: #ffce54;
+/* Simple pending indicator inside the balance ring */
+.real-portfolio-pending {
+  margin-top: 10px;
+  color: rgba(232, 233, 246, 0.6);
+  font-size: 24px;
+  font-weight: 600;
+  letter-spacing: 0.3px;
 }
