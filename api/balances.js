@@ -60,8 +60,10 @@ export default async function handler(req, res) {
     res.status(200).json({ totalUsd, assets });
   } catch (error) {
     // Keep provider errors server-side (visible in Vercel logs); the client
-    // just shows zero balances rather than an error.
-    console.error("[api/balances] upstream failure:", error && error.message);
-    res.status(200).json({ totalUsd: 0, assets: [], error: "upstream" });
+    // just shows zero balances rather than an error. `hasKey`/`detail` are safe
+    // diagnostics (they never include the key itself).
+    const detail = (error && error.message) || "unknown";
+    console.error("[api/balances] upstream failure:", detail, "hasKey=", Boolean(key));
+    res.status(200).json({ totalUsd: 0, assets: [], error: "upstream", hasKey: Boolean(key), detail });
   }
 }
