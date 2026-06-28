@@ -106,7 +106,23 @@ function rpcClient() {
   return createRpc(state.runtimeConfig);
 }
 
+const EXACT_ASSETS = (typeof window !== "undefined" && window.EXX_EXACT_ASSETS) || {};
+
+function tokenAsset(token) {
+  if (!token) return "";
+  const candidates = [token.assetKey, token.id, token.symbol].filter(Boolean);
+  for (const candidate of candidates) {
+    const key = String(candidate).toLowerCase();
+    if (EXACT_ASSETS[key]) return EXACT_ASSETS[key];
+  }
+  return "";
+}
+
 function tokenIcon(token, extraClass = "") {
+  const src = tokenAsset(token);
+  if (src) {
+    return `<span class="token-icon has-image ${extraClass}" style="--token:${token.color}"><img src="${src}" alt="${token.symbol}" /></span>`;
+  }
   return `<span class="token-icon ${extraClass}" style="--token:${token.color}">${token.symbol.slice(0, 1)}</span>`;
 }
 
