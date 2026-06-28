@@ -36,5 +36,8 @@ await writeFile("outputs/exx-wallet-iphone.html", buildHtml("ios"));
 await writeFile("outputs/exx-wallet-android.html", buildHtml("android"));
 // The deployed root: a single self-contained file (CSS + JS + logo assets
 // inlined) so it renders identically anywhere, with no /src path dependencies.
+// Written to BOTH the repo root and outputs/ so `/` resolves whether Vercel's
+// Root Directory is set to the repo root or to outputs/.
 await writeFile("index.html", buildHtml());
-console.log("index.html (self-contained) + outputs/exx-wallet-preview.html");
+await writeFile("outputs/index.html", buildHtml());
+console.log("index.html + outputs/index.html (self-contained)");
