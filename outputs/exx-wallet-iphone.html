@@ -5450,7 +5450,7 @@ function exactApplyPending(list) {
       direction: "incoming",
       status: "pending",
       amount: `+${exactFormatAmount(amountNum)} ${token.symbol}`,
-      value: exactFormatUsd(amountNum * exactMoneyNumber(token.price)),
+      value: exactFormatUsd(amountNum * exactTokenPriceNumber(token)),
       title: "Received",
       day: "Pending",
       time: "Pending",
@@ -5579,7 +5579,7 @@ function exactRecordSentTx({ token, networkId, amount, to, hash, fee }) {
     direction: "outgoing",
     status: "pending",
     amount: `-${amount} ${token.symbol}`,
-    value: exactFormatUsd((Number(amount) || 0) * exactMoneyNumber(token.price)),
+    value: exactFormatUsd((Number(amount) || 0) * exactTokenPriceNumber(token)),
     fee: fee || `0.000029 ${feeSymbol}`,
     address: to,
     title: "Sent",
@@ -5640,6 +5640,14 @@ async function exactCompleteSend(pin) {
   if (exactIsLive() && EXACT_EVM_CHAIN_IDS[network.id] && !exactHasEncryptedSeed()) {
     exactState.pendingSend = null;
     exactState.toast = "Watch-only wallet — re-import your recovery phrase to send";
+    exactRender();
+    return;
+  }
+
+  // Any other live network is not signable here — never fake a transaction.
+  if (exactIsLive()) {
+    exactState.pendingSend = null;
+    exactState.toast = `Sending ${token.symbol} on ${network.label} isn't available yet`;
     exactRender();
     return;
   }
@@ -5969,13 +5977,19 @@ async function exactSendEvm({ pin, token, network, amount, to }) {
   return { hash, fee };
 }
 
+// True only for networks whose address we actually derive from the seed.
+function exactNetworkHasRealAddress(networkId) {
+  return EXACT_EVM_NETWORK_IDS.has(networkId) || networkId === "bitcoin";
+}
+
 function exactReceiveAddress(token = exactToken()) {
   const network = exactSelectedNetwork(token);
-  if (exactIsLive() && exactRuntime.address && EXACT_EVM_NETWORK_IDS.has(network.id)) {
-    return exactRuntime.address;
-  }
-  if (exactIsLive() && exactRuntime.btcAddress && network.id === "bitcoin") {
-    return exactRuntime.btcAddress;
+  if (exactIsLive()) {
+    // Live wallet: only ever return a genuinely derived address, never a demo
+    // placeholder — sending to a wrong address would lose funds.
+    if (EXACT_EVM_NETWORK_IDS.has(network.id)) return exactRuntime.address || "";
+    if (network.id === "bitcoin") return exactRuntime.btcAddress || "";
+    return "";
   }
   return network.address || "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289";
 }
@@ -6347,6 +6361,83 @@ function exactMoneyNumber(value) {
   return Number.isFinite(number) ? number : 0;
 }
 
+// ---------------------------------------------------------------------------
+// Live spot prices (CoinGecko via /api/prices). Token amounts come from Ankr;
+// these give accurate USD prices, 24h change, and per-transaction USD values.
+// ---------------------------------------------------------------------------
+const exactPrices = {}; // tokenId -> { usd, change }
+
+// Map our token ids to CoinGecko ids. Tokens without an entry keep their
+// built-in placeholder (best-effort; all the majors resolve to live prices).
+const exactCoingeckoIds = {
+  bitcoin: "bitcoin", ethereum: "ethereum", tether: "tether", "usd-coin": "usd-coin",
+  dai: "dai", "wrapped-bitcoin": "wrapped-bitcoin", chainlink: "chainlink",
+  polygon: "polygon-ecosystem-token", bnb: "binancecoin", arbitrum: "arbitrum",
+  optimism: "optimism", xrp: "ripple", solana: "solana", tron: "tron",
+  dogecoin: "dogecoin", cardano: "cardano", litecoin: "litecoin",
+  "base-eth": "ethereum", avalanche: "avalanche-2", fantom: "fantom",
+  gnosis: "xdai", "linea-eth": "ethereum", "scroll-eth": "ethereum",
+  flare: "flare-networks", syscoin: "syscoin", taiko: "taiko", telos: "telos",
+  xai: "xai-blockchain", xlayer: "okb", stellar: "stellar",
+  "hyper-evm": "hyperliquid", zcash: "zcash", toncoin: "the-open-network",
+  uniswap: "uniswap", aave: "aave", "shiba-inu": "shiba-inu", pepe: "pepe",
+  render: "render-token", "the-graph": "the-graph", "paypal-usd": "paypal-usd",
+  "euro-coin": "euro-coin",
+};
+
+function exactTokenPriceNumber(token) {
+  const live = exactPrices[token.id];
+  if (live && Number.isFinite(live.usd)) return live.usd;
+  return exactMoneyNumber(token.detailPrice || token.price);
+}
+
+function exactTokenChangeNumber(token) {
+  const live = exactPrices[token.id];
+  if (live && Number.isFinite(live.change)) return live.change;
+  return Number.parseFloat(String(token.change || "0").replace(/[+%]/g, "")) || 0;
+}
+
+function exactFormatPrice(usd) {
+  const n = Number(usd);
+  if (!Number.isFinite(n) || n <= 0) return "$0.00";
+  if (n >= 1) return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+  if (n >= 0.01) return `$${n.toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 4 })}`;
+  return `$${n.toPrecision(2)}`;
+}
+
+function exactFormatChange(pct) {
+  const n = Number(pct);
+  if (!Number.isFinite(n)) return "+0.0%";
+  return `${n >= 0 ? "+" : ""}${n.toFixed(Math.abs(n) < 1 ? 1 : 2)}%`;
+}
+
+function exactTokenPriceLabel(token) { return exactFormatPrice(exactTokenPriceNumber(token)); }
+function exactTokenChangeLabel(token) { return exactFormatChange(exactTokenChangeNumber(token)); }
+
+async function exactFetchPrices() {
+  const ids = Array.from(new Set(Object.values(exactCoingeckoIds)));
+  if (!ids.length) return;
+  let data;
+  try {
+    const res = await fetch(`/api/prices?ids=${encodeURIComponent(ids.join(","))}`, { headers: { accept: "application/json" } });
+    if (!res.ok) return;
+    data = await res.json();
+  } catch (error) {
+    console.error("[exx] price fetch failed:", error);
+    return;
+  }
+  const prices = (data && data.prices) || {};
+  let changed = false;
+  for (const token of exactTokens) {
+    const entry = prices[exactCoingeckoIds[token.id]];
+    if (entry && Number.isFinite(Number(entry.usd))) {
+      exactPrices[token.id] = { usd: Number(entry.usd), change: Number(entry.change) };
+      changed = true;
+    }
+  }
+  if (changed) exactRender();
+}
+
 function exactShortHash(hash) {
   return hash ? `${hash.slice(0, 7)}...${hash.slice(-5)}` : "-";
 }
@@ -6444,7 +6535,7 @@ function exactComputedTokenValue(token) {
   if (exactPortfolioHoldings[token.id]) return exactPortfolioHoldings[token.id].value;
   const balance = Number(String(exactTokenBalance(token)).replace(/,/g, ""));
   if (!Number.isFinite(balance) || balance <= 0) return 0;
-  return balance * exactMoneyNumber(token.price);
+  return balance * exactTokenPriceNumber(token);
 }
 
 function exactTokenTransactions(tokenId = exactState.selected) {
@@ -6512,7 +6603,7 @@ function realAssetRow(token, options = {}) {
       ${exactIcon(token)}
       <span class="real-asset-copy">
         <strong>${token.name}</strong>
-        <small>${token.price} ${token.change}</small>
+        <small>${exactTokenPriceLabel(token)} ${exactTokenChangeLabel(token)}</small>
       </span>
       <em style="color:${token.color}">${options.showToggle ? (enabled ? "✓" : "○") : token.symbol}</em>
     </button>
@@ -6595,7 +6686,7 @@ function exactRangePoints(token) {
 }
 
 function exactRangeChange(token) {
-  const baseChange = Number.parseFloat(String(token.detailChange || token.change || "0").replace(/[+%]/g, ""));
+  const baseChange = exactTokenChangeNumber(token);
   if (!Number.isFinite(baseChange) || Math.abs(baseChange) < 0.05) return "+0.0%";
   const multipliers = { LIVE: 1, "1D": 1.4, "7D": 2.1, "1M": 3.4, "3M": 4.8, "6M": 6.5, "1Y": 8.2 };
   const value = baseChange * (multipliers[exactState.activeRange] || 1);
@@ -6632,12 +6723,7 @@ function exactAreaPath(points) {
 }
 
 function exactChartLowLabel(token, points) {
-  if (exactState.activeRange === "LIVE") {
-    if (token.id === "bitcoin") return "$59,287.84";
-    if (token.id === "ethereum") return "$1,555.67";
-    if (token.id === "tether") return "$0.9967";
-  }
-  const price = exactMoneyNumber(token.detailPrice || token.price);
+  const price = exactTokenPriceNumber(token);
   const min = Math.min(...(points || exactRangePoints(token)));
   const max = Math.max(...(points || exactRangePoints(token)));
   const spread = Math.max(max - min, 1);
@@ -6894,7 +6980,7 @@ function renderRealDetail() {
         </header>
         <section class="real-detail-hero">
           ${exactIcon(token, "real-large-icon")}
-          <h1>${token.detailPrice || token.price}</h1>
+          <h1>${exactTokenPriceLabel(token)}</h1>
           <p>${token.name} <strong>${exactRangeChange(token)}</strong></p>
           ${exactNetworks(token).length > 1 && network.label !== token.name ? `<small class="real-detail-network">${network.label}</small>` : ""}
         </section>
@@ -6912,7 +6998,7 @@ function renderRealDetail() {
             </defs>
             <line x1="0" y1="54" x2="649" y2="54"></line>
             <line x1="0" y1="287" x2="649" y2="287"></line>
-            <text x="27" y="48">${token.detailPrice || token.price}</text>
+            <text x="27" y="48">${exactTokenPriceLabel(token)}</text>
             <text x="27" y="280">${exactChartLowLabel(token, points)}</text>
             <path d="${area}" fill="url(#realFill)"></path>
             <path d="${chart}" class="glow" fill="none" stroke="${token.color}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path>
@@ -6960,7 +7046,7 @@ function renderRealSend() {
   const network = exactSelectedNetwork(token);
   const balanceNum = Number(String(exactTokenBalance(token)).replace(/,/g, "")) || 0;
   const amountNum = Number(exactState.sendAmount) || 0;
-  const usdValue = amountNum * exactMoneyNumber(token.price);
+  const usdValue = amountNum * exactTokenPriceNumber(token);
   const insufficient = amountNum > balanceNum;
   const hasRecipient = Boolean((exactState.sendTo || "").trim());
   const canSend = amountNum > 0 && !insufficient && hasRecipient;
@@ -7053,14 +7139,33 @@ function renderRealReceive() {
   const token = exactToken();
   const network = exactSelectedNetwork(token);
   const address = exactReceiveAddress(token);
+  const networkPill = exactNetworks(token).length > 1
+    ? `<button class="real-network-pill" data-action="manage-token" data-token="${token.id}">${exactNetworkBadge(network, "tiny")} ${network.tag} NETWORK⌄</button>`
+    : `<span class="real-network-pill static">${exactNetworkBadge(network, "tiny")} ${network.tag} NETWORK</span>`;
+  // Live wallet, network we can't yet derive a real address for: never show a
+  // fake address/QR — be explicit instead.
+  if (!address) {
+    return `
+    <main class="real-phone real-receive exact-${exactState.device}" style="--asset:${token.color}">
+      <button class="real-receive-back" data-action="back" aria-label="Back">‹</button>
+      <section class="real-receive-card">
+        <button class="real-handle" data-action="back" aria-label="Back"></button>
+        ${networkPill}
+        ${exactIcon(token, "real-receive-icon")}
+        <h1>Coming soon</h1>
+        <p>Receiving ${token.symbol} on the ${network.label} network isn't available in this wallet yet. Use Bitcoin or an Ethereum/EVM network for now.</p>
+        <button class="real-primary-button" data-action="back">Back</button>
+      </section>
+      ${exactToast()}
+    </main>
+  `;
+  }
   return `
     <main class="real-phone real-receive exact-${exactState.device}" style="--asset:${token.color}">
       <button class="real-receive-back" data-action="back" aria-label="Back">‹</button>
       <section class="real-receive-card">
         <button class="real-handle" data-action="back" aria-label="Back"></button>
-        ${exactNetworks(token).length > 1
-          ? `<button class="real-network-pill" data-action="manage-token" data-token="${token.id}">${exactNetworkBadge(network, "tiny")} ${network.tag} NETWORK⌄</button>`
-          : `<span class="real-network-pill static">${exactNetworkBadge(network, "tiny")} ${network.tag} NETWORK</span>`}
+        ${networkPill}
         ${exactIcon(token, "real-receive-icon")}
         <div class="real-qr">
           ${exactQrSvg(address)}
@@ -7494,6 +7599,14 @@ exactRoot.addEventListener("click", (event) => {
       exactRender();
       return;
     }
+    // Live wallet can only sign for networks we actually support.
+    if (exactIsLive() && !EXACT_EVM_CHAIN_IDS[network.id]) {
+      exactState.toast = network.id === "bitcoin"
+        ? "Bitcoin sending is coming soon"
+        : `Sending ${token.symbol} on ${network.label} isn't available yet`;
+      exactRender();
+      return;
+    }
     exactState.pendingSend = { tokenId: token.id, networkId: network.id, amount, to: recipient };
     if (exactHasPin()) {
       // Require the PIN to authorize the transaction.
@@ -7509,12 +7622,16 @@ exactRoot.addEventListener("click", (event) => {
   }
   if (target.dataset.action === "copy-address") {
     const address = exactReceiveAddress(exactToken());
-    try {
-      navigator.clipboard?.writeText(address);
-    } catch {
-      /* clipboard unavailable */
+    if (!address) {
+      exactState.toast = "No address available for this network yet";
+    } else {
+      try {
+        navigator.clipboard?.writeText(address);
+      } catch {
+        /* clipboard unavailable */
+      }
+      exactState.toast = "Address copied";
     }
-    exactState.toast = "Address copied";
   }
   if (target.dataset.action === "txdetail") {
     exactState.selectedTx = target.dataset.tx;
@@ -7584,12 +7701,15 @@ window.addEventListener?.("resize", exactRender);
 exactRestoreRuntime();
 exactRender();
 if (exactIsLive() && exactRuntime.unlocked && !exactState.locked) exactSyncLiveBalances();
+exactFetchPrices();
 
-// Poll the mempool feed so pending receives appear without a manual refresh.
+// Poll the mempool feed so pending receives appear without a manual refresh,
+// and refresh spot prices so USD values stay accurate.
 if (typeof setInterval === "function") {
   setInterval(() => {
     if (exactIsLive() && exactRuntime.unlocked && !exactState.locked) exactFetchPending();
   }, 30000);
+  setInterval(() => { exactFetchPrices(); }, 60000);
 }
 
 window.EXX_EXACT_DEBUG = { exactState, exactTokens, exactIcon, exactRender, exactRuntime, exactSyncLiveBalances };
