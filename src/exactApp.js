@@ -1608,23 +1608,23 @@ function renderRealLanding() {
 function renderRealAccess() {
   return `
     <main class="real-phone real-access exact-${exactState.device}">
-      ${realTopBar({ back: "landing", title: "Wallet Access" })}
+      ${realTopBar({ back: "landing", title: "Get Started" })}
       <section class="real-access-hero">
         <div class="real-logo-circle">${exactImage("profile_logo") || "⟠"}</div>
         <h1>Exodus Wallet</h1>
-        <p>Create a wallet on this device or restore access locally.</p>
+        <p>Create a new wallet, or restore one with your recovery phrase.</p>
       </section>
       <section class="real-access-options">
         <button data-action="access-create">
-          <strong>Create Wallet</strong>
-          <span>Generate a new phrase, confirm it, then set a password.</span>
+          <strong>Create a new wallet</strong>
+          <span>Generate a secure 12-word recovery phrase.</span>
         </button>
         <button data-action="access-restore">
-          <strong>Restore Wallet</strong>
-          <span>Use a local-only recovery flow. No phrase is sent to a server.</span>
+          <strong>I already have a wallet</strong>
+          <span>Restore using your recovery phrase.</span>
         </button>
       </section>
-      <button class="real-secondary-wide" data-action="preview-wallet">Preview wallet</button>
+      <button class="real-secondary-wide" data-action="preview-wallet">Explore demo</button>
       ${exactToast()}
     </main>
   `;
