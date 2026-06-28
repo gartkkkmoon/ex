@@ -7,7 +7,15 @@
     "check": "node --check src/app.js && node --check src/exactApp.js && node --check src/services/ankrRpc.js && node --check src/services/transactionEngine.js && node --check src/services/vault.js && node --check src/services/runtimeConfig.js && node --check src/services/firebaseStore.js && node --check src/services/walletProvider.js && node --check src/services/liveEngine.js",
     "bundle": "node tools/bundle-preview.mjs",
     "bundle:exact": "node tools/bundle-exact-preview.mjs",
+    "bundle:crypto": "esbuild tools/crypto-entry.mjs --bundle --format=iife --platform=browser --minify --legal-comments=none --outfile=src/generated/cryptoBundle.js",
     "smoke": "node tests/smoke.mjs",
     "serve": "python3 -m http.server 4173 --bind 127.0.0.1"
+  },
+  "devDependencies": {
+    "@noble/curves": "^1",
+    "@noble/hashes": "^1",
+    "@scure/bip32": "^1",
+    "@scure/bip39": "^1",
+    "esbuild": "^0.25.0"
   }
 }

@@ -553,6 +553,8 @@ const exactState = {
   ]),
   restorePhrase: "",
   restoreAddress: "",
+  generatedMnemonic: "",
+  restoreResolvedAddress: "",
 };
 
 // ---------------------------------------------------------------------------
@@ -756,6 +758,36 @@ function exactResetWallet() {
   } catch {
     /* ignore */
   }
+}
+
+function exactCrypto() {
+  return (typeof window !== "undefined" && window.EXX_CRYPTO) || null;
+}
+
+// Real BIP39 phrase (interoperable with other wallets); falls back to demo
+// words only if the crypto bundle somehow failed to load.
+function exactNewMnemonic() {
+  const crypto = exactCrypto();
+  if (crypto) {
+    try { return crypto.generateMnemonic(12); } catch { /* fall through */ }
+  }
+  return exactSeedWords.join(" ");
+}
+
+function exactMnemonicWords(mnemonic) {
+  return String(mnemonic || "").trim().split(/\s+/).filter(Boolean);
+}
+
+// Resolve a restore input (recovery phrase OR public 0x address) to an address.
+function exactResolveRestore(input) {
+  const value = String(input || "").trim().replace(/\s+/g, " ");
+  if (/^0x[0-9a-fA-F]{40}$/.test(value)) return value;
+  const crypto = exactCrypto();
+  const words = value.split(" ").filter(Boolean);
+  if (crypto && (words.length === 12 || words.length === 24) && crypto.validateMnemonic(value)) {
+    try { return crypto.ethAddressFromMnemonic(value); } catch { return ""; }
+  }
+  return "";
 }
 
 const exactSeedWords = [
@@ -1604,10 +1636,11 @@ function renderRealCreate() {
       ${realTopBar({ back: "access", title: "Secret Phrase" })}
       <section class="real-sheet-panel">
         <h1>Write it down</h1>
-        <p>This demo phrase is shown locally only. A production wallet would generate and encrypt this on-device.</p>
+        <p>This is your 12-word recovery phrase. Save it offline — it restores this wallet in Exodus, MetaMask, or any standard wallet. Anyone with these words controls the funds.</p>
         <ol class="real-seed-grid">
-          ${exactSeedWords.map((word, index) => `<li><span>${index + 1}</span>${word}</li>`).join("")}
+          ${(exactMnemonicWords(exactState.generatedMnemonic).length ? exactMnemonicWords(exactState.generatedMnemonic) : exactSeedWords).map((word, index) => `<li><span>${index + 1}</span>${word}</li>`).join("")}
         </ol>
+        <button class="real-secondary-wide" data-action="copy-phrase">Copy phrase</button>
         <button class="real-primary-button" data-action="seed-saved">I saved my phrase</button>
       </section>
       ${exactToast()}
@@ -1621,11 +1654,11 @@ function renderRealConfirm() {
       ${realTopBar({ back: "create", title: "Confirm Phrase" })}
       <section class="real-sheet-panel">
         <h1>Confirm phrase</h1>
-        <p>Choose the requested words before setting your password.</p>
+        <p>Re-enter the requested words to confirm you saved them.</p>
         <div class="real-confirm-grid">
-          <label>Word 3<input placeholder="harbor" /></label>
-          <label>Word 8<input placeholder="ember" /></label>
-          <label>Word 12<input placeholder="matrix" /></label>
+          <label>Word 3<input data-confirm-index="3" placeholder="word 3" autocomplete="off" /></label>
+          <label>Word 8<input data-confirm-index="8" placeholder="word 8" autocomplete="off" /></label>
+          <label>Word 12<input data-confirm-index="12" placeholder="word 12" autocomplete="off" /></label>
         </div>
         <button class="real-primary-button" data-action="phrase-confirmed">Confirm phrase</button>
       </section>
@@ -1640,10 +1673,10 @@ function renderRealRestore() {
       ${realTopBar({ back: "access", title: "Restore Wallet" })}
       <section class="real-sheet-panel">
         <h1>Restore your wallet</h1>
-        <p>Your secret phrase stays on this device. Paste the public wallet address you want to load — Exodus reads its live balances from Ankr.</p>
+        <p>Enter your 12 or 24-word recovery phrase from any wallet. It stays on this device — only the derived public address is used to read balances.</p>
         <label class="real-field-label">Secret recovery phrase <small>(kept local, never sent)</small></label>
         <textarea data-access-field="restorePhrase" placeholder="word 1  word 2  word 3 …">${exactState.restorePhrase}</textarea>
-        <label class="real-field-label">Wallet address to load</label>
+        <label class="real-field-label">Or a public address to watch <small>(optional)</small></label>
         <input class="real-text-input" data-access-field="restoreAddress" placeholder="0x…" value="${exactState.restoreAddress}" />
         <label class="real-field-label">Ankr API key <small>(optional — improves reliability)</small></label>
         <input class="real-text-input" data-runtime-field="ankrToken" placeholder="paste Ankr Advanced API key" value="${exactRuntime.ankrToken}" />
@@ -2109,6 +2142,7 @@ exactRoot.addEventListener("click", (event) => {
   if (target.dataset.action === "landing") exactState.screen = "landing";
   if (target.dataset.action === "access-create") {
     exactState.onboardingMode = "create";
+    exactState.generatedMnemonic = exactNewMnemonic();
     exactState.screen = "create";
   }
   if (target.dataset.action === "access-restore") {
@@ -2118,12 +2152,34 @@ exactRoot.addEventListener("click", (event) => {
   if (target.dataset.action === "create") exactState.screen = "create";
   if (target.dataset.action === "confirm") exactState.screen = "confirm";
   if (target.dataset.action === "restore") exactState.screen = "restore";
+  if (target.dataset.action === "copy-phrase") {
+    try { navigator.clipboard?.writeText(exactState.generatedMnemonic); } catch { /* ignore */ }
+    exactState.toast = "Phrase copied — store it safely";
+  }
   if (target.dataset.action === "seed-saved") exactState.screen = "confirm";
   if (target.dataset.action === "phrase-confirmed") {
-    if (exactState.onboardingMode === "restore" && !exactValidEvmAddress(exactState.restoreAddress)) {
-      exactState.toast = "Enter a valid 0x wallet address to restore";
-      exactRender();
-      return;
+    if (exactState.onboardingMode === "restore") {
+      const phrase = exactState.restorePhrase.trim();
+      const address = exactResolveRestore(phrase || exactState.restoreAddress);
+      if (!address) {
+        exactState.toast = "Enter a valid recovery phrase or 0x address";
+        exactRender();
+        return;
+      }
+      exactState.restoreResolvedAddress = address;
+    } else if (exactState.onboardingMode === "create") {
+      const words = exactMnemonicWords(exactState.generatedMnemonic);
+      const expected = { 3: words[2], 8: words[7], 12: words[11] };
+      const entered = {};
+      exactRoot.querySelectorAll("[data-confirm-index]").forEach((input) => {
+        entered[input.dataset.confirmIndex] = input.value.trim().toLowerCase();
+      });
+      const ok = words.length === 12 && Object.keys(expected).every((index) => entered[index] === expected[index]);
+      if (!ok) {
+        exactState.toast = "Those words don't match — check your phrase";
+        exactRender();
+        return;
+      }
     }
     exactState.screen = "password";
   }
@@ -2133,10 +2189,11 @@ exactRoot.addEventListener("click", (event) => {
   }
   if (target.dataset.action === "password-done") {
     if (exactState.onboardingMode === "restore") {
-      exactEnterLiveWallet(exactState.restoreAddress.trim());
+      exactEnterLiveWallet(exactState.restoreResolvedAddress);
       exactState.toast = "Wallet restored";
     } else if (exactState.onboardingMode === "create") {
-      exactEnterLiveWallet(exactRandomEvmAddress());
+      const address = exactResolveRestore(exactState.generatedMnemonic) || exactRandomEvmAddress();
+      exactEnterLiveWallet(address);
       exactState.toast = "Wallet ready";
     } else {
       exactEnterPreviewWallet();

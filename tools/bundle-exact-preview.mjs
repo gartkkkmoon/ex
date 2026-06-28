@@ -2,6 +2,7 @@ import { mkdir, readFile, writeFile } from "node:fs/promises";
 
 const css = await readFile("src/exactStyles.css", "utf8");
 const assets = await readFile("src/generated/exactAssets.js", "utf8");
+const crypto = await readFile("src/generated/cryptoBundle.js", "utf8");
 const js = await readFile("src/exactApp.js", "utf8");
 
 function buildHtml(forcedDevice = "") {
@@ -22,6 +23,11 @@ ${css}
     <script>
 ${forcedDeviceScript}
 ${assets}
+    </script>
+    <script>
+${crypto}
+    </script>
+    <script>
 ${js}
     </script>
   </body>
