@@ -1,0 +1,3241 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Exx Wallet Control Platform Preview</title>
+    <style>
+:root {
+  color-scheme: dark;
+  font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  background: #080b12;
+  color: #f7f7ff;
+  font-synthesis: none;
+  letter-spacing: 0;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  min-width: 320px;
+  margin: 0;
+  background:
+    radial-gradient(circle at 20% 0%, rgba(104, 87, 242, 0.18), transparent 25rem),
+    linear-gradient(135deg, #080b12 0%, #10121e 48%, #090b12 100%);
+}
+
+button,
+input {
+  font: inherit;
+}
+
+button {
+  cursor: pointer;
+}
+
+.app-shell {
+  min-height: 100vh;
+  padding: 22px;
+}
+
+.app-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 18px;
+  max-width: 1320px;
+  margin: 0 auto 18px;
+}
+
+.app-header h1 {
+  margin: 3px 0 0;
+  font-size: clamp(26px, 4vw, 42px);
+  line-height: 1;
+  letter-spacing: 0;
+}
+
+.eyebrow {
+  color: #9ca0b8;
+  font-size: 13px;
+  font-weight: 700;
+  text-transform: uppercase;
+}
+
+.mode-switch,
+.filter-bar,
+.range-tabs,
+.filter-chips {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.mode-switch {
+  padding: 6px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 14px;
+  background: rgba(23, 28, 41, 0.78);
+}
+
+.mode-switch button,
+.filter-bar button,
+.range-tabs button,
+.filter-chips button {
+  min-height: 34px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 14px;
+  background: transparent;
+  color: #9ca0b8;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.mode-switch .active,
+.filter-bar .active,
+.range-tabs .active,
+.filter-chips .active {
+  background: #f7f7ff;
+  color: #171c29;
+}
+
+.wallet-stage {
+  display: grid;
+  grid-template-columns: minmax(360px, 430px) minmax(420px, 1fr);
+  gap: 26px;
+  align-items: start;
+  max-width: 1320px;
+  margin: 0 auto;
+}
+
+.phone-shell {
+  position: relative;
+  min-height: 820px;
+  overflow: hidden;
+  border: 10px solid #070a12;
+  border-radius: 38px;
+  background:
+    linear-gradient(180deg, rgba(108, 92, 231, 0.20), transparent 36%),
+    #151729;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.48);
+}
+
+.phone-status {
+  display: flex;
+  justify-content: space-between;
+  padding: 14px 20px 0;
+  color: #f7f7ff;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.status-icons {
+  color: #cdd1e9;
+  letter-spacing: 1px;
+}
+
+.wallet-topline {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  min-height: 48px;
+  padding: 8px 18px;
+  color: #f7f7ff;
+}
+
+.wallet-topline strong {
+  font-size: 13px;
+  letter-spacing: 0;
+}
+
+.icon-button {
+  display: inline-grid;
+  place-items: center;
+  width: 36px;
+  height: 36px;
+  border: 0;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.03);
+  color: #e7e7fb;
+  font-size: 24px;
+}
+
+.wallet-home,
+.asset-detail,
+.assets-manage,
+.flow-screen {
+  padding: 4px 22px 110px;
+}
+
+.wallet-home {
+  text-align: center;
+}
+
+.exodus-orb,
+.token-icon {
+  display: inline-grid;
+  place-items: center;
+  color: #fff;
+  background:
+    radial-gradient(circle at 35% 28%, rgba(255, 255, 255, 0.7), transparent 12%),
+    radial-gradient(circle at 50% 55%, var(--token, #7457f2), #413093 66%, #1a1f36);
+  box-shadow: 0 0 24px color-mix(in srgb, var(--token, #7457f2) 55%, transparent);
+}
+
+.exodus-orb {
+  width: 84px;
+  height: 84px;
+  margin: 14px auto 14px;
+  border-radius: 50%;
+  font-size: 34px;
+  --token: #7457f2;
+}
+
+.wallet-home h1 {
+  margin: 0 0 12px;
+  font-size: 30px;
+  font-weight: 700;
+  letter-spacing: 0;
+}
+
+.home-actions {
+  display: flex;
+  justify-content: center;
+  gap: 10px;
+  margin-bottom: 18px;
+}
+
+.home-actions button,
+.primary-flow,
+.ops-panel > button {
+  min-height: 40px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 18px;
+  background: #7457f2;
+  color: #fff;
+  font-weight: 800;
+}
+
+.home-actions button + button {
+  background: #252840;
+}
+
+.portfolio-strip,
+.formula-box,
+.schema-strip,
+.integration-panel,
+.ops-panel,
+.metric-tile {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(29, 34, 53, 0.84);
+}
+
+.portfolio-strip {
+  display: grid;
+  gap: 4px;
+  margin-bottom: 16px;
+  border-radius: 18px;
+  padding: 14px;
+  text-align: left;
+}
+
+.portfolio-strip span,
+.formula-box span,
+.panel-heading span,
+.metric-tile span {
+  color: #9ca0b8;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.portfolio-strip strong {
+  font-size: 28px;
+}
+
+.portfolio-strip small,
+.formula-box small,
+.metric-tile small,
+.tx-row small,
+.asset-copy small,
+.manage-row small {
+  color: #9ca0b8;
+}
+
+.feature-grid {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 10px;
+  margin-bottom: 16px;
+}
+
+.feature-grid button {
+  display: grid;
+  gap: 8px;
+  min-height: 86px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 18px;
+  background: #22253b;
+  color: #e8e9ff;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.feature-grid span {
+  color: #8e5cff;
+  font-size: 28px;
+}
+
+.mini-assets,
+.asset-list,
+.tx-feed,
+.architecture-list,
+.security-list,
+.admin-log-strip {
+  display: grid;
+  gap: 10px;
+}
+
+.asset-card,
+.manage-row {
+  display: grid;
+  grid-template-columns: 46px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  width: 100%;
+  min-height: 70px;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+  border-radius: 16px;
+  padding: 12px;
+  background: linear-gradient(180deg, #272a42, #202338);
+  color: #fff;
+  text-align: left;
+}
+
+.token-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 14px;
+  font-size: 18px;
+  font-weight: 900;
+}
+
+.token-icon.large {
+  width: 58px;
+  height: 58px;
+  border-radius: 50%;
+  margin: 8px auto 12px;
+  font-size: 22px;
+}
+
+.asset-copy {
+  display: grid;
+  gap: 3px;
+}
+
+.asset-symbol,
+.manage-row em {
+  font-size: 12px;
+  font-style: normal;
+  font-weight: 900;
+}
+
+.positive {
+  color: #28e0b0;
+  font-style: normal;
+}
+
+.negative {
+  color: #ef5b6d;
+  font-style: normal;
+}
+
+.asset-detail {
+  text-align: center;
+}
+
+.asset-detail h2 {
+  margin: 0;
+  font-size: 32px;
+  line-height: 1.1;
+  letter-spacing: 0;
+}
+
+.asset-detail p {
+  margin: 5px 0 8px;
+  color: #aeb3cc;
+  font-size: 13px;
+}
+
+.price-chart {
+  width: 100%;
+  height: 190px;
+  margin: 16px 0 6px;
+}
+
+.range-tabs {
+  justify-content: space-between;
+  margin: 0 0 18px;
+}
+
+.range-tabs button {
+  min-width: 34px;
+  min-height: 28px;
+  padding: 0 8px;
+  font-size: 10px;
+}
+
+.balance-row {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1px;
+  overflow: hidden;
+  margin-top: 10px;
+  border-radius: 16px;
+  background: rgba(255, 255, 255, 0.06);
+}
+
+.balance-row span {
+  display: grid;
+  gap: 4px;
+  padding: 18px 14px;
+  background: #191c31;
+}
+
+.balance-row strong {
+  color: #f8c62c;
+  font-size: 18px;
+}
+
+.balance-row small {
+  color: #9ca0b8;
+  font-size: 12px;
+}
+
+.empty-note,
+.flow-note {
+  margin: 18px auto;
+  max-width: 290px;
+  color: #9ca0b8;
+  font-size: 12px;
+  line-height: 1.5;
+}
+
+.action-dock,
+.wallet-bottom-nav {
+  position: absolute;
+  left: 24px;
+  right: 24px;
+  display: grid;
+  align-items: center;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  background: rgba(43, 45, 68, 0.92);
+  box-shadow: 0 16px 30px rgba(0, 0, 0, 0.28);
+  backdrop-filter: blur(12px);
+}
+
+.action-dock {
+  bottom: 24px;
+  grid-template-columns: repeat(4, 1fr);
+  min-height: 70px;
+  border-radius: 36px;
+  padding: 8px;
+}
+
+.action-dock button,
+.wallet-bottom-nav button {
+  display: grid;
+  place-items: center;
+  border: 0;
+  background: transparent;
+  color: #f7f7ff;
+  font-weight: 800;
+}
+
+.action-dock button:nth-child(2),
+.action-dock button:nth-child(3),
+.wallet-bottom-nav button:nth-child(2) {
+  min-height: 52px;
+  border-radius: 26px;
+  background: #7357f2;
+}
+
+.action-dock span {
+  font-size: 18px;
+}
+
+.action-dock small {
+  font-size: 9px;
+}
+
+.wallet-bottom-nav {
+  bottom: 24px;
+  grid-template-columns: repeat(3, 1fr);
+  min-height: 62px;
+  border-radius: 32px;
+  padding: 7px;
+}
+
+.assets-manage .search-field {
+  margin-bottom: 12px;
+}
+
+.search-field {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 0 14px;
+  background: #202338;
+}
+
+.search-field input {
+  width: 100%;
+  min-height: 42px;
+  border: 0;
+  outline: 0;
+  background: transparent;
+  color: #fff;
+}
+
+.filter-chips {
+  overflow-x: auto;
+  margin-bottom: 14px;
+}
+
+.manage-row em {
+  display: grid;
+  place-items: center;
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: #7457f2;
+  color: white;
+}
+
+.flow-screen {
+  display: grid;
+  gap: 14px;
+}
+
+.flow-screen label {
+  display: grid;
+  gap: 8px;
+  color: #9ca0b8;
+  font-size: 12px;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.flow-screen input,
+.config-grid input,
+.flow-screen code {
+  width: 100%;
+  min-height: 48px;
+  overflow-wrap: anywhere;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 13px 14px;
+  background: #202338;
+  color: #f7f7ff;
+  text-transform: none;
+}
+
+.config-grid input {
+  min-height: 38px;
+  border-radius: 12px;
+  padding: 0 12px;
+  background: #111622;
+}
+
+.primary-flow {
+  min-height: 52px;
+  border-radius: 18px;
+}
+
+.qr-preview {
+  display: grid;
+  grid-template-columns: repeat(7, 1fr);
+  gap: 4px;
+  width: 190px;
+  height: 190px;
+  margin: 8px auto;
+  border-radius: 20px;
+  padding: 16px;
+  background: #f7f7ff;
+}
+
+.qr-preview span {
+  border-radius: 4px;
+  background: #d9dbeb;
+}
+
+.qr-preview .on {
+  background: #151729;
+}
+
+.wallet-ledger {
+  display: grid;
+  gap: 14px;
+}
+
+.panel-heading {
+  display: flex;
+  align-items: end;
+  justify-content: space-between;
+  gap: 16px;
+}
+
+.panel-heading strong {
+  font-size: 32px;
+}
+
+.panel-heading.compact strong {
+  font-size: 15px;
+}
+
+.formula-box,
+.schema-strip {
+  display: grid;
+  gap: 7px;
+  border-radius: 18px;
+  padding: 18px;
+}
+
+.formula-box strong {
+  font-size: 30px;
+}
+
+.integration-panel {
+  display: grid;
+  gap: 12px;
+  border-radius: 18px;
+  padding: 14px;
+}
+
+.integration-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.integration-actions button,
+.save-config {
+  min-height: 34px;
+  border: 0;
+  border-radius: 999px;
+  padding: 0 12px;
+  background: #252840;
+  color: #fff;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.integration-actions button:first-child,
+.save-config {
+  background: #7457f2;
+}
+
+.config-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.config-grid label {
+  display: grid;
+  gap: 6px;
+  color: #9ca0b8;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.live-status {
+  display: grid;
+  gap: 4px;
+  color: #9ca0b8;
+  font-size: 12px;
+}
+
+.live-status code {
+  color: #dfe3f6;
+}
+
+.live-balance-table {
+  max-height: 260px;
+  overflow: auto;
+}
+
+.tx-feed {
+  border-radius: 18px;
+}
+
+.tx-row {
+  display: grid;
+  grid-template-columns: 38px 1fr auto;
+  gap: 12px;
+  align-items: center;
+  min-height: 64px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(29, 34, 53, 0.74);
+}
+
+.tx-row > span:nth-child(2) {
+  display: grid;
+  gap: 2px;
+}
+
+.tx-direction {
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  border-radius: 50%;
+  font-weight: 900;
+}
+
+.tx-direction.incoming {
+  background: rgba(40, 224, 176, 0.14);
+  color: #28e0b0;
+}
+
+.tx-direction.outgoing {
+  background: rgba(239, 91, 109, 0.14);
+  color: #ef5b6d;
+}
+
+.status-pill,
+.chain-pill {
+  display: inline-grid;
+  place-items: center;
+  min-height: 24px;
+  width: max-content;
+  border-radius: 999px;
+  padding: 0 9px;
+  font-size: 11px;
+  font-weight: 900;
+}
+
+.status-pill.ok {
+  background: rgba(40, 224, 176, 0.14);
+  color: #28e0b0;
+}
+
+.status-pill.warn {
+  background: rgba(248, 198, 44, 0.14);
+  color: #f8c62c;
+}
+
+.status-pill.bad {
+  background: rgba(239, 91, 109, 0.14);
+  color: #ef5b6d;
+}
+
+.chain-pill {
+  background: color-mix(in srgb, var(--chain) 18%, transparent);
+  color: var(--chain);
+}
+
+.schema-strip code,
+.vault-preview {
+  display: block;
+  overflow-wrap: anywhere;
+  border-radius: 10px;
+  padding: 8px 10px;
+  background: #10131f;
+  color: #cbd0eb;
+}
+
+.admin-shell {
+  display: grid;
+  grid-template-columns: 220px minmax(0, 1fr);
+  max-width: 1320px;
+  min-height: 740px;
+  margin: 0 auto;
+  overflow: hidden;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 22px;
+  background: #0d1018;
+  box-shadow: 0 28px 70px rgba(0, 0, 0, 0.36);
+}
+
+.admin-sidebar {
+  display: grid;
+  align-content: start;
+  gap: 8px;
+  border-right: 1px solid rgba(255, 255, 255, 0.08);
+  padding: 18px;
+  background: #111622;
+}
+
+.brand-mark {
+  margin-bottom: 16px;
+  color: #fff;
+  font-size: 22px;
+}
+
+.admin-sidebar button {
+  min-height: 38px;
+  border: 0;
+  border-radius: 10px;
+  padding: 0 12px;
+  background: transparent;
+  color: #9ca0b8;
+  text-align: left;
+  font-size: 13px;
+  font-weight: 800;
+}
+
+.admin-sidebar button.active {
+  background: #1d2433;
+  color: #fff;
+}
+
+.admin-content {
+  min-width: 0;
+  padding: 18px;
+}
+
+.admin-topbar {
+  display: grid;
+  grid-template-columns: max-content minmax(240px, 1fr) max-content;
+  gap: 14px;
+  align-items: center;
+  margin-bottom: 16px;
+}
+
+.admin-topbar span {
+  font-weight: 900;
+}
+
+.admin-topbar button {
+  min-height: 40px;
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: 999px;
+  padding: 0 14px;
+  background: #1d2433;
+  color: #f7f7ff;
+  font-weight: 800;
+}
+
+.admin-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.metric-tile {
+  display: grid;
+  gap: 8px;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.metric-tile strong {
+  font-size: 28px;
+}
+
+.admin-panels {
+  display: grid;
+  grid-template-columns: minmax(0, 1.5fr) minmax(360px, 1fr);
+  gap: 12px;
+}
+
+.ops-panel {
+  min-width: 0;
+  border-radius: 14px;
+  padding: 16px;
+}
+
+.ops-panel.full {
+  grid-column: 1 / -1;
+}
+
+.ops-panel h2 {
+  margin: 0 0 12px;
+  font-size: 16px;
+}
+
+.table-wrap {
+  overflow-x: auto;
+}
+
+table {
+  width: 100%;
+  border-collapse: collapse;
+  min-width: 700px;
+}
+
+th,
+td {
+  border-bottom: 1px solid rgba(255, 255, 255, 0.07);
+  padding: 10px 8px;
+  color: #dfe3f6;
+  text-align: left;
+  font-size: 13px;
+  white-space: nowrap;
+}
+
+th {
+  color: #8f98ad;
+  font-size: 11px;
+  text-transform: uppercase;
+}
+
+td code,
+.schema-strip code,
+.vault-preview {
+  font-family: "SFMono-Regular", Consolas, monospace;
+  font-size: 12px;
+}
+
+.security-list {
+  margin: 0 0 14px;
+  padding-left: 18px;
+  color: #c5cadc;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.architecture-list {
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.architecture-list span,
+.admin-log-strip span {
+  display: grid;
+  gap: 4px;
+  border-radius: 12px;
+  padding: 11px;
+  background: #111622;
+  color: #dfe3f6;
+  font-size: 12px;
+  font-weight: 800;
+}
+
+.admin-log-strip {
+  margin-top: 14px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+}
+
+.iteration-footer {
+  max-width: 1320px;
+  margin: 18px auto 0;
+  color: #8f98ad;
+  font-size: 12px;
+}
+
+@media (max-width: 980px) {
+  .app-shell {
+    padding: 14px;
+  }
+
+  .app-header,
+  .wallet-stage,
+  .admin-shell {
+    grid-template-columns: 1fr;
+  }
+
+  .app-header {
+    display: grid;
+  }
+
+  .phone-shell {
+    max-width: 430px;
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  .admin-shell {
+    display: block;
+  }
+
+  .admin-sidebar {
+    display: flex;
+    overflow-x: auto;
+    border-right: 0;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  }
+
+  .admin-sidebar button {
+    white-space: nowrap;
+  }
+
+  .admin-topbar,
+  .admin-grid,
+  .admin-panels {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 460px) {
+  .phone-shell {
+    min-height: 760px;
+    border-width: 6px;
+    border-radius: 30px;
+  }
+
+  .wallet-home,
+  .asset-detail,
+  .assets-manage,
+  .flow-screen {
+    padding-inline: 14px;
+  }
+
+  .action-dock,
+  .wallet-bottom-nav {
+    left: 14px;
+    right: 14px;
+  }
+}
+
+    </style>
+  </head>
+  <body>
+    <div id="app"></div>
+    <script>
+const SUPPORTED_CHAINS = {
+  ethereum: {
+    id: "ethereum",
+    label: "Ethereum",
+    symbol: "ETH",
+    chainId: 1,
+    ankrSlug: "eth",
+    explorer: "https://etherscan.io",
+    confirmations: 12,
+    color: "#8f83ff",
+  },
+  polygon: {
+    id: "polygon",
+    label: "Polygon",
+    symbol: "MATIC",
+    chainId: 137,
+    ankrSlug: "polygon",
+    explorer: "https://polygonscan.com",
+    confirmations: 80,
+    color: "#8f5cff",
+  },
+  bsc: {
+    id: "bsc",
+    label: "BNB Smart Chain",
+    symbol: "BNB",
+    chainId: 56,
+    ankrSlug: "bsc",
+    explorer: "https://bscscan.com",
+    confirmations: 20,
+    color: "#f3ba2f",
+  },
+  arbitrum: {
+    id: "arbitrum",
+    label: "Arbitrum",
+    symbol: "ETH",
+    chainId: 42161,
+    ankrSlug: "arbitrum",
+    explorer: "https://arbiscan.io",
+    confirmations: 20,
+    color: "#4d8dff",
+  },
+  optimism: {
+    id: "optimism",
+    label: "Optimism",
+    symbol: "ETH",
+    chainId: 10,
+    ankrSlug: "optimism",
+    explorer: "https://optimistic.etherscan.io",
+    confirmations: 20,
+    color: "#ff4b5c",
+  },
+};
+
+const TOKEN_REGISTRY = [
+  {
+    chain: "ethereum",
+    symbol: "USDC",
+    name: "USD Coin",
+    decimals: 6,
+    address: "0xA0b86991c6218b36c1d19D4a2e9Eb0cE3606eB48",
+  },
+  {
+    chain: "polygon",
+    symbol: "USDC",
+    name: "USD Coin",
+    decimals: 6,
+    address: "0x3c499c542cef5e3811e1192ce70d8cc03d5c3359",
+  },
+  {
+    chain: "bsc",
+    symbol: "USDT",
+    name: "Tether USD",
+    decimals: 18,
+    address: "0x55d398326f99059fF775485246999027B3197955",
+  },
+];
+
+function buildAnkrUrl(chainId, token = "") {
+  const chain = SUPPORTED_CHAINS[chainId];
+  if (!chain) {
+    throw new Error(`Unsupported chain: ${chainId}`);
+  }
+  const suffix = token ? `/${token}` : "";
+  return `https://rpc.ankr.com/${chain.ankrSlug}${suffix}`;
+}
+
+
+function toNumber(rawValue) {
+  const value = Number(rawValue);
+  return Number.isFinite(value) ? value : 0;
+}
+
+function computeMainBalance({ confirmed = 0, pendingIncoming = 0, pendingOutgoing = 0 }) {
+  return toNumber(confirmed) + toNumber(pendingIncoming) - toNumber(pendingOutgoing);
+}
+
+function computeWalletTotals(wallets, transactions) {
+  return wallets.map((wallet) => {
+    const pendingIncoming = transactions
+      .filter((tx) => tx.walletId === wallet.id && tx.status !== "confirmed" && tx.direction === "incoming")
+      .reduce((total, tx) => total + toNumber(tx.amountUsd), 0);
+
+    const pendingOutgoing = transactions
+      .filter((tx) => tx.walletId === wallet.id && tx.status !== "confirmed" && tx.direction === "outgoing")
+      .reduce((total, tx) => total + toNumber(tx.amountUsd), 0);
+
+    return {
+      ...wallet,
+      pendingIncoming,
+      pendingOutgoing,
+      mainBalanceUsd: computeMainBalance({
+        confirmed: wallet.confirmedUsd,
+        pendingIncoming,
+        pendingOutgoing,
+      }),
+    };
+  });
+}
+
+function summarizePortfolio(wallets) {
+  return wallets.reduce(
+    (summary, wallet) => ({
+      confirmedUsd: summary.confirmedUsd + toNumber(wallet.confirmedUsd),
+      pendingIncomingUsd: summary.pendingIncomingUsd + toNumber(wallet.pendingIncoming),
+      pendingOutgoingUsd: summary.pendingOutgoingUsd + toNumber(wallet.pendingOutgoing),
+      mainBalanceUsd: summary.mainBalanceUsd + toNumber(wallet.mainBalanceUsd),
+    }),
+    {
+      confirmedUsd: 0,
+      pendingIncomingUsd: 0,
+      pendingOutgoingUsd: 0,
+      mainBalanceUsd: 0,
+    },
+  );
+}
+
+
+
+const BALANCE_OF_SELECTOR = "0x70a08231";
+
+function strip0x(value) {
+  return value.replace(/^0x/i, "");
+}
+
+function padAddress(address) {
+  return strip0x(address).toLowerCase().padStart(64, "0");
+}
+
+function formatUnits(raw, decimals = 18) {
+  const value = BigInt(raw || "0");
+  const base = 10n ** BigInt(decimals);
+  const whole = value / base;
+  const fraction = value % base;
+  const fractionText = fraction.toString().padStart(decimals, "0").replace(/0+$/, "");
+  return fractionText ? `${whole}.${fractionText}` : whole.toString();
+}
+
+class AnkrRpcClient {
+  constructor({ apiToken = "", endpoints = {} } = {}) {
+    this.apiToken = apiToken;
+    this.endpoints = endpoints;
+    this.requestId = 1;
+  }
+
+  endpoint(chainId) {
+    if (this.endpoints[chainId]) return this.endpoints[chainId];
+    return buildAnkrUrl(chainId, this.apiToken);
+  }
+
+  async call(chainId, method, params = []) {
+    if (!SUPPORTED_CHAINS[chainId]) {
+      throw new Error(`Unsupported Ankr chain: ${chainId}`);
+    }
+
+    const response = await fetch(this.endpoint(chainId), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: this.requestId++,
+        method,
+        params,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ankr RPC HTTP ${response.status} for ${chainId}:${method}`);
+    }
+
+    const payload = await response.json();
+    if (payload.error) {
+      throw new Error(payload.error.message || `Ankr RPC error for ${chainId}:${method}`);
+    }
+    return payload.result;
+  }
+
+  async getLatestBlock(chainId) {
+    const result = await this.call(chainId, "eth_blockNumber");
+    return Number.parseInt(result, 16);
+  }
+
+  async getNativeBalance(chainId, address, block = "latest") {
+    const [balanceHex, latestBlock] = await Promise.all([
+      this.call(chainId, "eth_getBalance", [address, block]),
+      this.getLatestBlock(chainId),
+    ]);
+
+    return {
+      chain: chainId,
+      address,
+      balanceWei: BigInt(balanceHex).toString(),
+      displayBalance: formatUnits(BigInt(balanceHex).toString(), 18),
+      blockNumber: latestBlock,
+    };
+  }
+
+  async getErc20Balance(chainId, tokenAddress, walletAddress, decimals = 18) {
+    const data = `${BALANCE_OF_SELECTOR}${padAddress(walletAddress)}`;
+    const result = await this.call(chainId, "eth_call", [{ to: tokenAddress, data }, "latest"]);
+    const rawBalance = BigInt(result).toString();
+    return {
+      chain: chainId,
+      tokenAddress,
+      walletAddress,
+      rawBalance,
+      displayBalance: formatUnits(rawBalance, decimals),
+    };
+  }
+
+  async getTransactionByHash(chainId, txHash) {
+    return this.call(chainId, "eth_getTransactionByHash", [txHash]);
+  }
+
+  async getTransactionReceipt(chainId, txHash) {
+    return this.call(chainId, "eth_getTransactionReceipt", [txHash]);
+  }
+
+  async getBlockByNumber(chainId, blockNumber, fullTransactions = true) {
+    const hexBlock = `0x${Number(blockNumber).toString(16)}`;
+    return this.call(chainId, "eth_getBlockByNumber", [hexBlock, fullTransactions]);
+  }
+}
+
+
+
+function classifyTransactionStatus({ transaction, receipt, confirmations = 0, requiredConfirmations = 12 }) {
+  if (!transaction && !receipt) return "not_found";
+  if (receipt?.status === "0x0") return "failed";
+  if (receipt?.status === "0x1" && confirmations >= requiredConfirmations) return "confirmed";
+  if (receipt?.status === "0x1") return "confirming";
+  return "pending";
+}
+
+async function lookupTransaction({ rpc, chainId, txHash }) {
+  const chain = SUPPORTED_CHAINS[chainId];
+  const [transaction, receipt, latestBlock] = await Promise.all([
+    rpc.getTransactionByHash(chainId, txHash),
+    rpc.getTransactionReceipt(chainId, txHash),
+    rpc.getLatestBlock(chainId),
+  ]);
+
+  const minedBlock = receipt?.blockNumber ? Number.parseInt(receipt.blockNumber, 16) : null;
+  const confirmations = minedBlock ? Math.max(latestBlock - minedBlock + 1, 0) : 0;
+
+  return {
+    chain: chainId,
+    txHash,
+    transaction,
+    receipt,
+    confirmations,
+    status: classifyTransactionStatus({
+      transaction,
+      receipt,
+      confirmations,
+      requiredConfirmations: chain.confirmations,
+    }),
+  };
+}
+
+function createLocalPendingTransaction({ userId, walletId, chain, from, to, amountUsd, amountNative, txHash }) {
+  return {
+    id: `local-${crypto.randomUUID()}`,
+    txHash,
+    userId,
+    walletId,
+    chain,
+    from,
+    to,
+    amountUsd,
+    amountNative,
+    direction: "outgoing",
+    source: "LOCAL",
+    status: "pending_local",
+    confirmations: 0,
+    firstSeenAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function createMempoolIncomingTransaction({ userId, walletId, chain, from, to, amountUsd, amountNative, txHash }) {
+  return {
+    id: `mempool-${crypto.randomUUID()}`,
+    txHash,
+    userId,
+    walletId,
+    chain,
+    from,
+    to,
+    amountUsd,
+    amountNative,
+    direction: "incoming",
+    source: "MEMPOOL",
+    status: "pending_mempool",
+    confirmations: 0,
+    firstSeenAt: new Date().toISOString(),
+    updatedAt: new Date().toISOString(),
+  };
+}
+
+function updatePendingTransaction(transaction, lookupResult) {
+  const now = new Date().toISOString();
+  if (lookupResult.status === "confirmed") {
+    return {
+      ...transaction,
+      status: "confirmed",
+      confirmations: lookupResult.confirmations,
+      blockNumber: Number.parseInt(lookupResult.receipt.blockNumber, 16),
+      updatedAt: now,
+    };
+  }
+
+  if (lookupResult.status === "failed") {
+    return {
+      ...transaction,
+      status: "failed",
+      confirmations: lookupResult.confirmations,
+      updatedAt: now,
+    };
+  }
+
+  return {
+    ...transaction,
+    status: transaction.source === "MEMPOOL" ? "pending_mempool" : "pending_local",
+    confirmations: lookupResult.confirmations,
+    updatedAt: now,
+  };
+}
+
+async function scanIncomingNativeTransfers({ rpc, chainId, blockNumber, watchedAddresses }) {
+  const watched = new Map(watchedAddresses.map((entry) => [entry.address.toLowerCase(), entry]));
+  const block = await rpc.getBlockByNumber(chainId, blockNumber, true);
+  const matches = [];
+
+  for (const tx of block.transactions || []) {
+    const watch = tx.to ? watched.get(tx.to.toLowerCase()) : null;
+    if (!watch) continue;
+    matches.push({
+      txHash: tx.hash,
+      userId: watch.userId,
+      walletId: watch.walletId,
+      chain: chainId,
+      from: tx.from,
+      to: tx.to,
+      amountNativeWei: BigInt(tx.value || "0x0").toString(),
+      blockNumber,
+      status: "pending_mempool",
+      source: "MEMPOOL",
+      direction: "incoming",
+    });
+  }
+
+  return matches;
+}
+
+
+const FIREBASE_SCHEMA = {
+  users: {
+    path: "users/{id}",
+    fields: ["uid", "email", "role", "status", "createdAt", "updatedAt"],
+  },
+  wallets: {
+    path: "wallets/{walletId}",
+    fields: ["walletId", "userId", "label", "addresses", "vaultRef", "status", "createdAt", "updatedAt"],
+  },
+  transactions: {
+    path: "transactions/{txId}",
+    fields: [
+      "txId",
+      "userId",
+      "walletId",
+      "chain",
+      "txHash",
+      "direction",
+      "assetType",
+      "from",
+      "to",
+      "amountRaw",
+      "feeWei",
+      "confirmations",
+      "status",
+      "timestamps",
+    ],
+  },
+  admin_logs: {
+    path: "admin_logs/{logId}",
+    fields: ["logId", "adminUserId", "action", "targetType", "targetId", "metadata", "createdAt"],
+  },
+  system_status: {
+    path: "system_status/{id}",
+    fields: [
+      "key",
+      "chain",
+      "status",
+      "latestBlock",
+      "lastScannedBlock",
+      "lastSuccessAt",
+      "lastErrorAt",
+      "updatedAt",
+    ],
+  },
+};
+
+
+const ENCODER = new TextEncoder();
+const DECODER = new TextDecoder();
+
+function toBase64(bytes) {
+  return btoa(String.fromCharCode(...new Uint8Array(bytes)));
+}
+
+function fromBase64(value) {
+  return Uint8Array.from(atob(value), (char) => char.charCodeAt(0));
+}
+
+async function derivePreviewKey(passphrase) {
+  const digest = await crypto.subtle.digest("SHA-256", ENCODER.encode(passphrase));
+  return crypto.subtle.importKey("raw", digest, "AES-GCM", false, ["encrypt", "decrypt"]);
+}
+
+async function encryptWalletPreview(payload, passphrase) {
+  const key = await derivePreviewKey(passphrase);
+  const iv = crypto.getRandomValues(new Uint8Array(12));
+  const ciphertext = await crypto.subtle.encrypt(
+    { name: "AES-GCM", iv },
+    key,
+    ENCODER.encode(JSON.stringify(payload)),
+  );
+
+  return {
+    algorithm: "AES-256-GCM",
+    encryptionVersion: 1,
+    ciphertext: toBase64(ciphertext),
+    iv: toBase64(iv),
+    keyId: "backend-kms-required",
+    createdAt: new Date().toISOString(),
+  };
+}
+
+async function decryptWalletPreview(vaultRecord, passphrase) {
+  const key = await derivePreviewKey(passphrase);
+  const plaintext = await crypto.subtle.decrypt(
+    { name: "AES-GCM", iv: fromBase64(vaultRecord.iv) },
+    key,
+    fromBase64(vaultRecord.ciphertext),
+  );
+
+  return JSON.parse(DECODER.decode(plaintext));
+}
+
+const VAULT_SECURITY_RULES = [
+  "Private keys and seed phrases are encrypted before persistence.",
+  "Frontend never receives the production master key.",
+  "Production decryption belongs in backend Admin SDK or KMS-backed services only.",
+  "Admin views expose vault status, never decrypted vault payloads.",
+];
+
+
+const CONFIG_KEY = "exx.runtimeConfig.v1";
+
+const DEFAULT_RUNTIME_CONFIG = {
+  ankrApiToken: "",
+  firebaseProjectId: "",
+  firebaseApiKey: "",
+  firebaseIdToken: "",
+  backendBaseUrl: "",
+  enablePolling: true,
+};
+
+function safeJsonParse(value) {
+  try {
+    return value ? JSON.parse(value) : {};
+  } catch {
+    return {};
+  }
+}
+
+function getStorage() {
+  try {
+    return globalThis.localStorage || null;
+  } catch {
+    return null;
+  }
+}
+
+function readRuntimeConfig() {
+  const storage = getStorage();
+  const saved = storage ? safeJsonParse(storage.getItem(CONFIG_KEY)) : {};
+  const injected = globalThis.window?.EXX_CONFIG || {};
+  return {
+    ...DEFAULT_RUNTIME_CONFIG,
+    ...saved,
+    ...injected,
+  };
+}
+
+function saveRuntimeConfig(config) {
+  const storage = getStorage();
+  const nextConfig = {
+    ...DEFAULT_RUNTIME_CONFIG,
+    ...config,
+  };
+  if (storage) storage.setItem(CONFIG_KEY, JSON.stringify(nextConfig));
+  return nextConfig;
+}
+
+function runtimeMode(config) {
+  if (config.backendBaseUrl) return "Backend API";
+  if (config.firebaseProjectId && config.firebaseApiKey && config.firebaseIdToken) return "Firebase REST";
+  return "Local encrypted mirror";
+}
+
+function hasAnkr(config) {
+  return Boolean(config.ankrApiToken || config.allowPublicAnkr);
+}
+
+
+const LOCAL_STORE_KEY = "exx.localMirror.v1";
+
+function storage() {
+  try {
+    return globalThis.localStorage || null;
+  } catch {
+    return null;
+  }
+}
+
+function readLocalStore() {
+  const local = storage();
+  if (!local) return {};
+  try {
+    return JSON.parse(local.getItem(LOCAL_STORE_KEY) || "{}");
+  } catch {
+    return {};
+  }
+}
+
+function writeLocalStore(value) {
+  const local = storage();
+  if (local) local.setItem(LOCAL_STORE_KEY, JSON.stringify(value));
+}
+
+function firestoreValue(value) {
+  if (value === null || value === undefined) return { nullValue: null };
+  if (Array.isArray(value)) return { arrayValue: { values: value.map(firestoreValue) } };
+  if (typeof value === "boolean") return { booleanValue: value };
+  if (typeof value === "number") {
+    return Number.isInteger(value) ? { integerValue: String(value) } : { doubleValue: value };
+  }
+  if (typeof value === "object") {
+    return {
+      mapValue: {
+        fields: Object.fromEntries(Object.entries(value).map(([key, child]) => [key, firestoreValue(child)])),
+      },
+    };
+  }
+  return { stringValue: String(value) };
+}
+
+function firestoreDocument(data) {
+  return {
+    fields: Object.fromEntries(Object.entries(data).map(([key, value]) => [key, firestoreValue(value)])),
+  };
+}
+
+class LocalMirrorStore {
+  constructor() {
+    this.kind = "local";
+  }
+
+  async upsert(collection, id, data) {
+    const all = readLocalStore();
+    all[collection] = all[collection] || {};
+    all[collection][id] = {
+      ...data,
+      mirroredAt: new Date().toISOString(),
+    };
+    writeLocalStore(all);
+    return all[collection][id];
+  }
+}
+
+class FirebaseRestStore {
+  constructor({ projectId, apiKey, idToken }) {
+    this.kind = "firebase";
+    this.projectId = projectId;
+    this.apiKey = apiKey;
+    this.idToken = idToken;
+  }
+
+  get enabled() {
+    return Boolean(this.projectId && this.apiKey && this.idToken);
+  }
+
+  documentUrl(collection, id) {
+    const encodedId = encodeURIComponent(id);
+    return `https://firestore.googleapis.com/v1/projects/${this.projectId}/databases/(default)/documents/${collection}/${encodedId}?key=${this.apiKey}`;
+  }
+
+  async upsert(collection, id, data) {
+    if (!this.enabled) {
+      throw new Error("Firebase REST requires projectId, apiKey, and an authenticated Firebase ID token.");
+    }
+
+    const response = await fetch(this.documentUrl(collection, id), {
+      method: "PATCH",
+      headers: {
+        "content-type": "application/json",
+        authorization: `Bearer ${this.idToken}`,
+      },
+      body: JSON.stringify(firestoreDocument(data)),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Firebase REST ${response.status}: ${text || response.statusText}`);
+    }
+    return response.json();
+  }
+}
+
+class BackendApiStore {
+  constructor({ baseUrl }) {
+    this.kind = "backend";
+    this.baseUrl = String(baseUrl || "").replace(/\/+$/, "");
+  }
+
+  get enabled() {
+    return Boolean(this.baseUrl);
+  }
+
+  documentUrl(collection, id) {
+    return `${this.baseUrl}/api/${encodeURIComponent(collection)}/${encodeURIComponent(id)}`;
+  }
+
+  async upsert(collection, id, data) {
+    if (!this.enabled) throw new Error("Backend API base URL is required.");
+
+    const response = await fetch(this.documentUrl(collection, id), {
+      method: "PUT",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify(data),
+    });
+
+    if (!response.ok) {
+      const text = await response.text();
+      throw new Error(`Backend API ${response.status}: ${text || response.statusText}`);
+    }
+    return response.json();
+  }
+}
+
+function createStore(config) {
+  if (config.backendBaseUrl) {
+    return new BackendApiStore({ baseUrl: config.backendBaseUrl });
+  }
+  if (config.firebaseProjectId && config.firebaseApiKey && config.firebaseIdToken) {
+    return new FirebaseRestStore({
+      projectId: config.firebaseProjectId,
+      apiKey: config.firebaseApiKey,
+      idToken: config.firebaseIdToken,
+    });
+  }
+  return new LocalMirrorStore();
+}
+
+
+const ETHEREUM_CHAIN_ID = "0x1";
+
+function ethereumProvider() {
+  return globalThis.window?.ethereum || null;
+}
+
+function hasInjectedWallet() {
+  return Boolean(ethereumProvider());
+}
+
+async function connectInjectedWallet() {
+  const provider = ethereumProvider();
+  if (!provider) {
+    throw new Error("No browser wallet provider was found. Open this app in a browser with an EIP-1193 wallet extension.");
+  }
+  const accounts = await provider.request({ method: "eth_requestAccounts" });
+  const address = accounts?.[0];
+  if (!address) throw new Error("No wallet account was returned by the browser wallet.");
+  return {
+    address,
+    chainId: await provider.request({ method: "eth_chainId" }),
+  };
+}
+
+function decimalToWeiHex(amount) {
+  const [whole = "0", fraction = ""] = String(amount || "0").trim().split(".");
+  const fractionWei = fraction.padEnd(18, "0").slice(0, 18);
+  const wei = BigInt(whole || "0") * 10n ** 18n + BigInt(fractionWei || "0");
+  return `0x${wei.toString(16)}`;
+}
+
+async function sendNativeEthereum({ from, to, amount }) {
+  const provider = ethereumProvider();
+  if (!provider) throw new Error("Connect a browser wallet before sending.");
+
+  const chainId = await provider.request({ method: "eth_chainId" });
+  if (chainId !== ETHEREUM_CHAIN_ID) {
+    await provider.request({
+      method: "wallet_switchEthereumChain",
+      params: [{ chainId: ETHEREUM_CHAIN_ID }],
+    });
+  }
+
+  return provider.request({
+    method: "eth_sendTransaction",
+    params: [{
+      from,
+      to,
+      value: decimalToWeiHex(amount),
+    }],
+  });
+}
+
+
+
+function createRpc(config) {
+  return new AnkrRpcClient({ apiToken: config.ankrApiToken });
+}
+
+async function fetchNativeBalances({ rpc, address, chains = Object.keys(SUPPORTED_CHAINS) }) {
+  const settled = await Promise.allSettled(
+    chains.map((chainId) => rpc.getNativeBalance(chainId, address)),
+  );
+
+  return settled.map((result, index) => {
+    const chainId = chains[index];
+    if (result.status === "fulfilled") {
+      return {
+        ...result.value,
+        ok: true,
+      };
+    }
+    return {
+      chain: chainId,
+      address,
+      ok: false,
+      error: result.reason?.message || "Balance lookup failed",
+    };
+  });
+}
+
+async function fetchRegisteredTokenBalances({ rpc, address }) {
+  const settled = await Promise.allSettled(
+    TOKEN_REGISTRY.map((token) => rpc.getErc20Balance(token.chain, token.address, address, token.decimals)),
+  );
+
+  return settled.map((result, index) => {
+    const token = TOKEN_REGISTRY[index];
+    if (result.status === "fulfilled") {
+      return {
+        ...token,
+        ...result.value,
+        ok: true,
+      };
+    }
+    return {
+      ...token,
+      walletAddress: address,
+      ok: false,
+      error: result.reason?.message || "Token balance lookup failed",
+    };
+  });
+}
+
+async function checkAnkrHealth({ rpc }) {
+  const chainIds = Object.keys(SUPPORTED_CHAINS);
+  const started = Date.now();
+  const settled = await Promise.allSettled(chainIds.map((chainId) => rpc.getLatestBlock(chainId)));
+  return settled.map((result, index) => {
+    const chainId = chainIds[index];
+    return {
+      chain: chainId,
+      status: result.status === "fulfilled" ? "healthy" : "failed",
+      latestBlock: result.status === "fulfilled" ? result.value : 0,
+      scannedBlock: result.status === "fulfilled" ? result.value : 0,
+      latencyMs: Date.now() - started,
+      errors: result.status === "fulfilled" ? 0 : 1,
+      error: result.status === "rejected" ? result.reason?.message : "",
+    };
+  });
+}
+
+async function trackPendingTransactions({ rpc, transactions }) {
+  const pending = transactions.filter((tx) => tx.txHash && tx.status.includes("pending"));
+  const updates = await Promise.allSettled(
+    pending.map((tx) => lookupTransaction({ rpc, chainId: tx.chain, txHash: tx.txHash })),
+  );
+
+  return new Map(
+    updates
+      .map((result, index) => [pending[index].id, result])
+      .filter(([, result]) => result.status === "fulfilled")
+      .map(([id, result]) => [id, result.value]),
+  );
+}
+
+async function scanEthereumIncoming({ rpc, address, wallet, fromBlock, toBlock }) {
+  const matches = [];
+  for (let blockNumber = fromBlock; blockNumber <= toBlock; blockNumber += 1) {
+    const blockMatches = await scanIncomingNativeTransfers({
+      rpc,
+      chainId: "ethereum",
+      blockNumber,
+      watchedAddresses: [{ address, userId: wallet.userId, walletId: wallet.id }],
+    });
+    matches.push(...blockMatches);
+  }
+  return matches;
+}
+
+
+const UI_SPEC_JSON = {
+  app: "mobile_wallet",
+  frame: { target: "mobile-first", bg: "#131528", safeArea: true, radius: 28 },
+  theme: {
+    colors: {
+      bg: "#131528",
+      panel: "#23263c",
+      panel2: "#2b2e49",
+      text: "#f7f7ff",
+      muted: "#9ca0b8",
+      purple: "#7457f2",
+      violet: "#8e5cff",
+      green: "#28e0b0",
+      yellow: "#f8c62c",
+      border: "#3b3f5c",
+    },
+    typography: {
+      font: "Inter/System",
+      heroValue: "48-56/700",
+      title: "30-40/600",
+      body: "16-20/500",
+      label: "12-14/500",
+    },
+  },
+  screens: ["walletHome", "assetDetail", "assetsManage", "send", "receive", "profileHub"],
+  bottomNav: {
+    type: "floating glass dock",
+    position: "bottom safe-area",
+    height: 74,
+    radius: 36,
+    active: "#7357f2",
+  },
+};
+
+const ADMIN_UI_SPEC_JSON = {
+  app: "wallet_admin_ops",
+  frame: { target: "desktop responsive", bg: "#0d1018", density: "compact" },
+  layout: ["leftSidebar", "topBar", "statusStrip", "mainGrid", "detailDrawer"],
+  navigation: ["Overview", "Users", "Wallets", "Transactions", "RPC Health", "Mempool", "Indexers"],
+  screens: {
+    users: ["userId", "email", "role", "status", "walletCount", "lastSeen", "riskFlag"],
+    wallets: ["walletId", "user", "chains", "balanceUsd", "status", "encrypted"],
+    transactions: ["txHash", "chain", "from", "to", "amount", "confirmations", "status", "age"],
+    system: ["providerStatus", "p95Latency", "errorRate", "blockHeightDrift"],
+  },
+};
+
+const SYSTEM_ARCHITECTURE = {
+  frontend: {
+    wallet: "Mobile-first SPA matching the uploaded Exodus-style screenshots.",
+    admin: "Separate desktop ops dashboard for users, wallets, transactions, RPC health, mempool, and indexers.",
+  },
+  backend: {
+    api: ["RpcService", "BalanceService", "TransactionLookupService", "PendingTxTracker", "BlockScanner", "VaultService"],
+    firebaseCollections: ["users", "wallets", "transactions", "admin_logs", "system_status"],
+    security: [
+      "Ankr API keys stay server-side.",
+      "Private keys and mnemonics are AES-256-GCM encrypted before Firebase persistence.",
+      "Frontend never receives master encryption keys or decrypted vault payloads.",
+    ],
+  },
+  balanceRule: "MAIN_BALANCE = confirmed_balance + pending_incoming - pending_outgoing",
+};
+
+
+
+const tokens = [
+  {
+    id: "bitcoin",
+    name: "Bitcoin",
+    symbol: "BTC",
+    priceUsd: 59488.06,
+    change: 0.4,
+    balance: 0,
+    valueUsd: 0,
+    color: "#f8c62c",
+    chart: [50, 42, 62, 56, 70, 48, 54, 41, 44, 37, 58, 67],
+  },
+  {
+    id: "ethereum",
+    name: "Ethereum",
+    symbol: "ETH",
+    priceUsd: 1562.19,
+    change: -0.3,
+    balance: 0,
+    valueUsd: 0,
+    color: "#8e83ff",
+    chart: [72, 74, 54, 58, 44, 41, 39, 30, 34, 31, 42, 51],
+  },
+  {
+    id: "bsc",
+    name: "BNB",
+    symbol: "BNB",
+    priceUsd: 604.12,
+    change: 1.6,
+    balance: 0,
+    valueUsd: 0,
+    color: "#f3ba2f",
+    chart: [35, 38, 42, 49, 52, 48, 59, 55, 62, 60, 70, 77],
+  },
+  {
+    id: "xrp",
+    name: "XRP",
+    symbol: "XRP",
+    priceUsd: 2.13,
+    change: 3.2,
+    balance: 0,
+    valueUsd: 0,
+    color: "#28a7e8",
+    chart: [20, 32, 28, 47, 51, 43, 52, 57, 61, 58, 64, 72],
+  },
+  {
+    id: "solana",
+    name: "Solana",
+    symbol: "SOL",
+    priceUsd: 143.35,
+    change: 2.7,
+    balance: 5.42,
+    valueUsd: 776.96,
+    color: "#24e0a6",
+    chart: [42, 44, 40, 55, 60, 57, 68, 70, 66, 73, 80, 84],
+  },
+  {
+    id: "tron",
+    name: "Tron",
+    symbol: "TRX",
+    priceUsd: 0.31,
+    change: -0.5,
+    balance: 2000,
+    valueUsd: 620,
+    color: "#ff3f53",
+    chart: [58, 52, 50, 47, 44, 42, 41, 36, 38, 32, 33, 30],
+  },
+  {
+    id: "dogecoin",
+    name: "Dogecoin",
+    symbol: "DOGE",
+    priceUsd: 0.17,
+    change: 2.4,
+    balance: 1000,
+    valueUsd: 170,
+    color: "#d6bf4a",
+    chart: [24, 30, 28, 36, 42, 39, 47, 45, 51, 56, 59, 63],
+  },
+  {
+    id: "cardano",
+    name: "Cardano",
+    symbol: "ADA",
+    priceUsd: 0.58,
+    change: 3.7,
+    balance: 600,
+    valueUsd: 348,
+    color: "#3979ff",
+    chart: [40, 41, 46, 44, 50, 53, 58, 54, 60, 63, 69, 72],
+  },
+  {
+    id: "litecoin",
+    name: "Litecoin",
+    symbol: "LTC",
+    priceUsd: 84.92,
+    change: -0.8,
+    balance: 1.25,
+    valueUsd: 106.15,
+    color: "#c5cad7",
+    chart: [66, 62, 57, 53, 49, 47, 48, 43, 39, 37, 35, 34],
+  },
+  {
+    id: "kdx",
+    name: "KDX Cash",
+    symbol: "KDX",
+    priceUsd: 1.05,
+    change: 4.1,
+    balance: 320,
+    valueUsd: 336,
+    color: "#29dd55",
+    chart: [32, 34, 39, 42, 50, 48, 54, 60, 67, 65, 72, 76],
+  },
+];
+
+const rawWallets = [
+  {
+    id: "wallet-primary",
+    userId: "user-001",
+    label: "Exodus Main",
+    status: "active",
+    encrypted: true,
+    confirmedUsd: 2357.11,
+    addresses: {
+      ethereum: "0x8f7a9E5f6b1C65f3FfeD43b132Ac74d8A58E1054",
+      polygon: "0x8f7a9E5f6b1C65f3FfeD43b132Ac74d8A58E1054",
+      bsc: "0x8f7a9E5f6b1C65f3FfeD43b132Ac74d8A58E1054",
+      arbitrum: "0x8f7a9E5f6b1C65f3FfeD43b132Ac74d8A58E1054",
+      optimism: "0x8f7a9E5f6b1C65f3FfeD43b132Ac74d8A58E1054",
+    },
+  },
+  {
+    id: "wallet-treasury",
+    userId: "user-002",
+    label: "Treasury Cold Path",
+    status: "locked",
+    encrypted: true,
+    confirmedUsd: 18420.3,
+    addresses: {
+      ethereum: "0x924B7d8d2F7eD8E2292e6277324A0162c640D9D4",
+      polygon: "0x924B7d8d2F7eD8E2292e6277324A0162c640D9D4",
+      bsc: "0x924B7d8d2F7eD8E2292e6277324A0162c640D9D4",
+      arbitrum: "0x924B7d8d2F7eD8E2292e6277324A0162c640D9D4",
+      optimism: "0x924B7d8d2F7eD8E2292e6277324A0162c640D9D4",
+    },
+  },
+];
+
+const users = [
+  {
+    id: "user-001",
+    email: "ava@example.test",
+    role: "user",
+    status: "active",
+    lastSeen: "2 min ago",
+    risk: "low",
+  },
+  {
+    id: "user-002",
+    email: "ops@example.test",
+    role: "admin",
+    status: "active",
+    lastSeen: "14 min ago",
+    risk: "watch",
+  },
+  {
+    id: "user-003",
+    email: "suspended@example.test",
+    role: "user",
+    status: "suspended",
+    lastSeen: "3 days ago",
+    risk: "high",
+  },
+];
+
+const transactions = [
+  {
+    id: "tx-001",
+    txHash: "0xa3f49b299ce7f04d8e861188377aa4698a99f3cb932a512f581d44ac9dcad001",
+    userId: "user-001",
+    walletId: "wallet-primary",
+    chain: "ethereum",
+    from: "0x8f7a...1054",
+    to: "0xc41d...a621",
+    amountUsd: 64.75,
+    amountNative: "0.0414 ETH",
+    direction: "outgoing",
+    source: "LOCAL",
+    status: "pending_local",
+    confirmations: 0,
+    firstSeenAt: "2026-06-25T21:22:12.000Z",
+  },
+  {
+    id: "tx-002",
+    txHash: "0x15a96890e29f22a08d175ccb681aef3208e5be38209abef159f200bd70ad0002",
+    userId: "user-001",
+    walletId: "wallet-primary",
+    chain: "ethereum",
+    from: "0x22bf...7c91",
+    to: "0x8f7a...1054",
+    amountUsd: 128.9,
+    amountNative: "0.0825 ETH",
+    direction: "incoming",
+    source: "MEMPOOL",
+    status: "pending_mempool",
+    confirmations: 0,
+    firstSeenAt: "2026-06-25T21:22:26.000Z",
+  },
+  {
+    id: "tx-003",
+    txHash: "0x29ee8a161127120d13f8232cd932248c601da359133a12f4884a1b009dbe0003",
+    userId: "user-002",
+    walletId: "wallet-treasury",
+    chain: "polygon",
+    from: "0x924b...d9d4",
+    to: "0x1d91...2abd",
+    amountUsd: 430.42,
+    amountNative: "725.21 MATIC",
+    direction: "outgoing",
+    source: "SCANNER",
+    status: "confirmed",
+    confirmations: 143,
+    firstSeenAt: "2026-06-25T20:12:10.000Z",
+  },
+  {
+    id: "tx-004",
+    txHash: "0xb1192a79d227913d62b7f22139fc4120ee51d2da894fa8875de50a6f6fed0004",
+    userId: "user-002",
+    walletId: "wallet-treasury",
+    chain: "bsc",
+    from: "0x0b11...910c",
+    to: "0x924b...d9d4",
+    amountUsd: 910.18,
+    amountNative: "1.506 BNB",
+    direction: "incoming",
+    source: "SCANNER",
+    status: "confirmed",
+    confirmations: 80,
+    firstSeenAt: "2026-06-25T19:45:41.000Z",
+  },
+];
+
+const wallets = computeWalletTotals(rawWallets, transactions);
+
+const systemStatus = [
+  { chain: "ethereum", status: "healthy", latestBlock: 22794021, scannedBlock: 22794018, latencyMs: 141, errors: 0 },
+  { chain: "polygon", status: "healthy", latestBlock: 73780211, scannedBlock: 73780199, latencyMs: 165, errors: 0 },
+  { chain: "bsc", status: "degraded", latestBlock: 51290441, scannedBlock: 51290388, latencyMs: 284, errors: 2 },
+  { chain: "arbitrum", status: "healthy", latestBlock: 344810223, scannedBlock: 344810219, latencyMs: 132, errors: 0 },
+  { chain: "optimism", status: "healthy", latestBlock: 137310922, scannedBlock: 137310917, latencyMs: 156, errors: 0 },
+];
+
+const adminLogs = [
+  {
+    id: "log-001",
+    actor: "admin-001",
+    action: "worker.replay_range",
+    target: "scanner:ethereum",
+    createdAt: "2026-06-25T20:59:00.000Z",
+  },
+  {
+    id: "log-002",
+    actor: "admin-001",
+    action: "wallet.freeze_check",
+    target: "wallet-treasury",
+    createdAt: "2026-06-25T21:03:12.000Z",
+  },
+];
+
+
+
+const app = document.querySelector("#app");
+
+const state = {
+  mode: "wallet",
+  walletScreen: "home",
+  selectedTokenId: "ethereum",
+  assetSearch: "",
+  adminView: "Overview",
+  txFilter: "all",
+  users: structuredClone(users),
+  wallets: structuredClone(wallets),
+  transactions: structuredClone(transactions),
+  systemStatus: structuredClone(systemStatus),
+  adminLogs: structuredClone(adminLogs),
+  vaultPreview: null,
+  runtimeConfig: readRuntimeConfig(),
+  connectedAddress: "",
+  connectedChainId: "",
+  liveBalances: [],
+  tokenBalances: [],
+  liveStatus: "Ready",
+  liveError: "",
+  persistenceStatus: "Not synced",
+  lastScannedEthereumBlock: 0,
+  syncTick: 0,
+};
+
+function money(value, options = {}) {
+  return new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency: "USD",
+    minimumFractionDigits: options.compact ? 0 : 2,
+    maximumFractionDigits: options.compact ? 0 : 2,
+  }).format(value || 0);
+}
+
+function compactHash(hash) {
+  if (!hash) return "-";
+  return `${hash.slice(0, 7)}...${hash.slice(-5)}`;
+}
+
+function titleCase(value) {
+  return value
+    .replace(/_/g, " ")
+    .split(" ")
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function escapeAttr(value) {
+  return String(value ?? "")
+    .replaceAll("&", "&amp;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;");
+}
+
+function getWallets() {
+  state.wallets = computeWalletTotals(
+    state.wallets.map(({ pendingIncoming, pendingOutgoing, mainBalanceUsd, ...wallet }) => wallet),
+    state.transactions,
+  );
+  return state.wallets;
+}
+
+function getPortfolio() {
+  return summarizePortfolio(getWallets());
+}
+
+function selectedToken() {
+  return tokens.find((token) => token.id === state.selectedTokenId) || tokens[1];
+}
+
+function activeWallet() {
+  return getWallets()[0];
+}
+
+function activeAddress() {
+  return state.connectedAddress || activeWallet().addresses.ethereum;
+}
+
+function setPrimaryAddress(address) {
+  state.connectedAddress = address;
+  state.wallets = state.wallets.map((wallet, index) => index === 0
+    ? {
+        ...wallet,
+        addresses: Object.fromEntries(Object.keys(SUPPORTED_CHAINS).map((chainId) => [chainId, address])),
+      }
+    : wallet);
+}
+
+function rpcClient() {
+  return createRpc(state.runtimeConfig);
+}
+
+function tokenIcon(token, extraClass = "") {
+  return `<span class="token-icon ${extraClass}" style="--token:${token.color}">${token.symbol.slice(0, 1)}</span>`;
+}
+
+function chainPill(chainId) {
+  const chain = SUPPORTED_CHAINS[chainId];
+  return `<span class="chain-pill" style="--chain:${chain.color}">${chain.label}</span>`;
+}
+
+function statusPill(status) {
+  const tone = status.includes("confirmed") || status === "healthy" || status === "active" ? "ok" :
+    status.includes("pending") || status === "degraded" || status === "watch" ? "warn" : "bad";
+  return `<span class="status-pill ${tone}">${titleCase(status)}</span>`;
+}
+
+function chartPath(points, width = 314, height = 150) {
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const range = Math.max(max - min, 1);
+  return points
+    .map((point, index) => {
+      const x = (index / (points.length - 1)) * width;
+      const y = height - ((point - min) / range) * (height - 20) - 10;
+      return `${index === 0 ? "M" : "L"}${x.toFixed(1)} ${y.toFixed(1)}`;
+    })
+    .join(" ");
+}
+
+function areaPath(points, width = 314, height = 150) {
+  const line = chartPath(points, width, height);
+  return `${line} L${width} ${height} L0 ${height} Z`;
+}
+
+function renderPhoneStatus() {
+  return `
+    <div class="phone-status">
+      <span>8:11 PM</span>
+      <span class="status-icons">●●◒</span>
+    </div>
+  `;
+}
+
+function renderWalletHome() {
+  const portfolio = getPortfolio();
+  const featured = tokens.slice(0, 5);
+  return `
+    ${renderPhoneStatus()}
+    <div class="wallet-topline">
+      <button class="icon-button" data-action="screen" data-screen="assets" aria-label="Manage assets">☷</button>
+      <button class="icon-button" data-action="screen" data-screen="assets" aria-label="Search assets">⌕</button>
+    </div>
+    <section class="wallet-home">
+      <div class="exodus-orb">◇</div>
+      <h1>Exodus Wallet</h1>
+      <div class="home-actions">
+        <button data-action="screen" data-screen="send">＋ Buy</button>
+        <button data-action="screen" data-screen="receive">↙ Receive</button>
+      </div>
+      <div class="portfolio-strip">
+        <span>Main balance</span>
+        <strong>${money(portfolio.mainBalanceUsd)}</strong>
+        <small>${money(portfolio.pendingIncomingUsd)} pending in · ${money(portfolio.pendingOutgoingUsd)} pending out</small>
+      </div>
+      <div class="feature-grid">
+        <button data-action="screen" data-screen="assets"><span>▰</span>Assets</button>
+        <button data-action="admin"><span>◈</span>Web3</button>
+        <button data-action="screen" data-screen="assets"><span>✦</span>NFTs</button>
+        <button data-action="admin"><span>⚙</span>Settings</button>
+      </div>
+      <div class="mini-assets">
+        ${featured.map(renderAssetCard).join("")}
+      </div>
+    </section>
+    ${renderWalletBottomNav()}
+  `;
+}
+
+function renderAssetCard(token) {
+  const changeClass = token.change >= 0 ? "positive" : "negative";
+  return `
+    <button class="asset-card" data-action="token" data-token="${token.id}">
+      ${tokenIcon(token)}
+      <span class="asset-copy">
+        <strong>${token.name}</strong>
+        <small>${money(token.priceUsd)} <em class="${changeClass}">${token.change >= 0 ? "+" : ""}${token.change}%</em></small>
+      </span>
+      <span class="asset-symbol" style="color:${token.color}">${token.symbol}</span>
+    </button>
+  `;
+}
+
+function renderAssetDetail() {
+  const token = selectedToken();
+  const chart = chartPath(token.chart);
+  const area = areaPath(token.chart);
+  return `
+    ${renderPhoneStatus()}
+    <div class="wallet-topline">
+      <button class="icon-button" data-action="screen" data-screen="home" aria-label="Back">‹</button>
+      <button class="icon-button" data-action="screen" data-screen="assets" aria-label="Menu">⋯</button>
+    </div>
+    <section class="asset-detail">
+      ${tokenIcon(token, "large")}
+      <h2>${money(token.priceUsd)}</h2>
+      <p>${token.name} <span class="${token.change >= 0 ? "positive" : "negative"}">${token.change >= 0 ? "+" : ""}${token.change}%</span></p>
+      <svg class="price-chart" viewBox="0 0 314 150" role="img" aria-label="${token.name} chart">
+        <defs>
+          <linearGradient id="chartFill" x1="0" x2="0" y1="0" y2="1">
+            <stop offset="0%" stop-color="${token.color}" stop-opacity="0.32" />
+            <stop offset="100%" stop-color="${token.color}" stop-opacity="0" />
+          </linearGradient>
+        </defs>
+        <path d="${area}" fill="url(#chartFill)"></path>
+        <path d="${chart}" fill="none" stroke="${token.color}" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"></path>
+        <circle cx="314" cy="${150 - ((token.chart.at(-1) - Math.min(...token.chart)) / Math.max(Math.max(...token.chart) - Math.min(...token.chart), 1)) * 130 - 10}" r="5" fill="${token.color}"></circle>
+      </svg>
+      <div class="range-tabs">
+        ${["LIVE", "1D", "7D", "1M", "3M", "6M", "1Y"].map((range, index) => `<button class="${index === 0 ? "active" : ""}">${range}</button>`).join("")}
+      </div>
+      <div class="balance-row">
+        <span><strong>${token.balance}</strong><small>${token.symbol}</small></span>
+        <span><strong>${money(token.valueUsd)}</strong><small>Value</small></span>
+      </div>
+      ${token.balance ? "" : `<p class="empty-note">You don't have any ${token.symbol} activity yet.</p>`}
+      <div class="action-dock">
+        <button data-action="screen" data-screen="send"><span>↗</span><small>Send</small></button>
+        <button><span>⇄</span><small>Swap</small></button>
+        <button><span>$</span><small>Buy/Sell</small></button>
+        <button data-action="screen" data-screen="receive"><span>↙</span><small>Receive</small></button>
+      </div>
+    </section>
+  `;
+}
+
+function renderAssetsManage() {
+  const filtered = tokens.filter((token) => {
+    const text = `${token.name} ${token.symbol}`.toLowerCase();
+    return text.includes(state.assetSearch.toLowerCase());
+  });
+
+  return `
+    ${renderPhoneStatus()}
+    <div class="wallet-topline">
+      <button class="icon-button" data-action="screen" data-screen="home" aria-label="Back">‹</button>
+      <strong>ASSETS</strong>
+      <button class="icon-button" aria-label="Add asset">⊕</button>
+    </div>
+    <section class="assets-manage">
+      <label class="search-field">
+        <span>⌕</span>
+        <input value="${state.assetSearch}" data-action="asset-search" placeholder="Search" />
+      </label>
+      <div class="filter-chips">
+        ${["Main", "Tokens", "ETH", "BSC"].map((chip, index) => `<button class="${index === 0 ? "active" : ""}">${chip}</button>`).join("")}
+      </div>
+      <div class="asset-list">
+        ${filtered.map((token, index) => `
+          <button class="manage-row" data-action="token" data-token="${token.id}">
+            ${tokenIcon(token)}
+            <span><strong>${token.name}</strong><small>${token.symbol}</small></span>
+            <em>${index % 3 === 1 ? "›" : "✓"}</em>
+          </button>
+        `).join("")}
+      </div>
+    </section>
+    ${renderWalletBottomNav()}
+  `;
+}
+
+function renderSendScreen() {
+  const token = selectedToken();
+  const canSendLive = state.connectedAddress && token.id === "ethereum";
+  return `
+    ${renderPhoneStatus()}
+    <div class="wallet-topline">
+      <button class="icon-button" data-action="screen" data-screen="asset" aria-label="Back">‹</button>
+      <strong>Send ${token.symbol}</strong>
+      <button class="icon-button" aria-label="Scan">⌗</button>
+    </div>
+    <section class="flow-screen">
+      ${tokenIcon(token, "large")}
+      <label>Recipient <input id="send-to" value="0xc41d21F18bD6932Aa0f7f6C16D00FD8A0270A621" /></label>
+      <label>Amount <input id="send-amount" value="0.0414" /></label>
+      <button class="primary-flow" data-action="${canSendLive ? "send-live" : "simulate-send"}">${canSendLive ? "Send with browser wallet" : "Create pending transaction"}</button>
+      <p class="flow-note">${canSendLive ? "The wallet extension signs and broadcasts; this app never receives the private key." : "Connect a browser wallet to broadcast. Without one, this creates a local pending record for testing."}</p>
+    </section>
+  `;
+}
+
+function renderReceiveScreen() {
+  const token = selectedToken();
+  const address = activeAddress();
+  return `
+    ${renderPhoneStatus()}
+    <div class="wallet-topline">
+      <button class="icon-button" data-action="screen" data-screen="asset" aria-label="Back">‹</button>
+      <strong>Receive ${token.symbol}</strong>
+      <button class="icon-button" aria-label="Copy">⧉</button>
+    </div>
+    <section class="flow-screen">
+      ${tokenIcon(token, "large")}
+      <div class="qr-preview">
+        ${Array.from({ length: 49 }).map((_, index) => `<span class="${(index * 7 + index) % 5 < 2 ? "on" : ""}"></span>`).join("")}
+      </div>
+      <code>${address}</code>
+      <button class="primary-flow" data-action="simulate-incoming">Simulate mempool incoming</button>
+      <p class="flow-note">Incoming Ethereum transfers enter as PENDING (MEMPOOL), then become CONFIRMED after receipt polling.</p>
+    </section>
+  `;
+}
+
+function renderWalletBottomNav() {
+  return `
+    <nav class="wallet-bottom-nav">
+      <button data-action="screen" data-screen="assets" title="Assets">▰</button>
+      <button data-action="token" data-token="ethereum" title="Swap">⇄</button>
+      <button data-action="screen" data-screen="send" title="Buy/Sell">$</button>
+    </nav>
+  `;
+}
+
+function renderWallet() {
+  const screen = state.walletScreen;
+  const content = screen === "home" ? renderWalletHome() :
+    screen === "assets" ? renderAssetsManage() :
+    screen === "send" ? renderSendScreen() :
+    screen === "receive" ? renderReceiveScreen() :
+    renderAssetDetail();
+
+  return `
+    <main class="wallet-stage">
+      <section class="phone-shell">${content}</section>
+      <aside class="wallet-ledger">
+        <div class="panel-heading">
+          <span>Live Wallet State</span>
+          <strong>${money(getPortfolio().mainBalanceUsd)}</strong>
+        </div>
+        ${renderIntegrationPanel()}
+        ${renderBalanceFormula()}
+        ${renderTransactionFeed(false)}
+        <div class="schema-strip">
+          <strong>Firebase Collections</strong>
+          ${Object.values(FIREBASE_SCHEMA).map((schema) => `<code>${schema.path}</code>`).join("")}
+        </div>
+      </aside>
+    </main>
+  `;
+}
+
+function renderIntegrationPanel() {
+  const config = state.runtimeConfig;
+  const address = activeAddress();
+  return `
+    <section class="integration-panel">
+      <div class="panel-heading compact">
+        <span>Live APIs</span>
+        <strong>${runtimeMode(config)}</strong>
+      </div>
+      <div class="integration-actions">
+        <button data-action="connect-wallet">${state.connectedAddress ? "Wallet connected" : "Connect browser wallet"}</button>
+        <button data-action="sync-live">Sync Ankr balances</button>
+        <button data-action="persist-state">Sync Firebase/local</button>
+      </div>
+      <div class="config-grid">
+        <label>Ankr token<input data-config-field="ankrApiToken" value="${escapeAttr(config.ankrApiToken)}" placeholder="required for live sync" /></label>
+        <label>Firebase project<input data-config-field="firebaseProjectId" value="${escapeAttr(config.firebaseProjectId)}" placeholder="project-id" /></label>
+        <label>Firebase API key<input data-config-field="firebaseApiKey" value="${escapeAttr(config.firebaseApiKey)}" placeholder="AIza..." /></label>
+        <label>Firebase ID token<input data-config-field="firebaseIdToken" value="${escapeAttr(config.firebaseIdToken)}" placeholder="auth token" type="password" /></label>
+        <label>Backend API<input data-config-field="backendBaseUrl" value="${escapeAttr(config.backendBaseUrl)}" placeholder="https://api.example.com" /></label>
+      </div>
+      <button class="save-config" data-action="save-config">Save API config</button>
+      <div class="live-status">
+        <span>${hasInjectedWallet() ? "Browser wallet available" : "No browser wallet detected"}</span>
+        <code>${compactHash(address)}</code>
+        <small>${state.liveStatus}${state.liveError ? ` · ${state.liveError}` : ""}</small>
+        <small>${state.persistenceStatus}</small>
+      </div>
+      ${renderLiveBalances()}
+    </section>
+  `;
+}
+
+function renderLiveBalances() {
+  if (!state.liveBalances.length && !state.tokenBalances.length) return "";
+  const nativeRows = state.liveBalances.map((balance) => `
+    <tr>
+      <td>${chainPill(balance.chain)}</td>
+      <td>${balance.ok ? `${Number(balance.displayBalance).toFixed(6)} ${SUPPORTED_CHAINS[balance.chain].symbol}` : "-"}</td>
+      <td>${balance.ok ? balance.blockNumber.toLocaleString() : balance.error}</td>
+    </tr>
+  `).join("");
+  const tokenRows = state.tokenBalances.map((balance) => `
+    <tr>
+      <td>${balance.symbol} on ${balance.chain}</td>
+      <td>${balance.ok ? Number(balance.displayBalance).toFixed(6) : "-"}</td>
+      <td>${balance.ok ? compactHash(balance.tokenAddress) : balance.error}</td>
+    </tr>
+  `).join("");
+
+  return `
+    <div class="table-wrap live-balance-table">
+      <table>
+        <thead><tr><th>Asset</th><th>Balance</th><th>Block / Contract</th></tr></thead>
+        <tbody>${nativeRows}${tokenRows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderBalanceFormula() {
+  const portfolio = getPortfolio();
+  return `
+    <div class="formula-box">
+      <span>MAIN_BALANCE</span>
+      <strong>${money(portfolio.mainBalanceUsd)}</strong>
+      <small>${money(portfolio.confirmedUsd)} confirmed + ${money(portfolio.pendingIncomingUsd)} pending in - ${money(portfolio.pendingOutgoingUsd)} pending out</small>
+    </div>
+  `;
+}
+
+function renderTransactionFeed(compact = true) {
+  const rows = state.transactions
+    .filter((tx) => state.txFilter === "all" || tx.status.includes(state.txFilter))
+    .slice(0, compact ? 6 : 8)
+    .map((tx) => `
+      <div class="tx-row">
+        <span class="tx-direction ${tx.direction}">${tx.direction === "incoming" ? "↙" : "↗"}</span>
+        <span>
+          <strong>${tx.amountNative}</strong>
+          <small>${compactHash(tx.txHash)} · ${tx.chain}</small>
+        </span>
+        ${statusPill(tx.status)}
+      </div>
+    `)
+    .join("");
+
+  return `<div class="tx-feed">${rows}</div>`;
+}
+
+function renderAdmin() {
+  const view = state.adminView;
+  return `
+    <main class="admin-shell">
+      <aside class="admin-sidebar">
+        <strong class="brand-mark">EXX</strong>
+        ${ADMIN_UI_SPEC_JSON.navigation.map((item) => `
+          <button class="${view === item ? "active" : ""}" data-action="admin-view" data-view="${item}">${item}</button>
+        `).join("")}
+      </aside>
+      <section class="admin-content">
+        <div class="admin-topbar">
+          <span>Secure Admin Control</span>
+          <label class="search-field admin-search"><span>⌕</span><input placeholder="Search users, wallets, tx hashes" /></label>
+          <button data-action="wallet">Open Wallet</button>
+        </div>
+        ${renderAdminOverview()}
+      </section>
+    </main>
+  `;
+}
+
+function renderAdminOverview() {
+  const view = state.adminView;
+  if (view === "Users") return renderUsersView();
+  if (view === "Wallets") return renderWalletsView();
+  if (view === "Transactions") return renderTransactionsView();
+  if (view === "RPC Health") return renderRpcView();
+  if (view === "Mempool") return renderMempoolView();
+  if (view === "Indexers") return renderIndexersView();
+  return `
+    <div class="admin-grid">
+      ${renderMetric("Users", state.users.length, "2 active")}
+      ${renderMetric("Active Wallets", getWallets().filter((wallet) => wallet.status === "active").length, "AES vault checked")}
+      ${renderMetric("Pending Tx", state.transactions.filter((tx) => tx.status.includes("pending")).length, "local + mempool")}
+      ${renderMetric("RPC p95", `${Math.max(...state.systemStatus.map((chain) => chain.latencyMs))}ms`, "Ankr only")}
+    </div>
+    <div class="admin-panels">
+      <section class="ops-panel">
+        <h2>Transaction Explorer</h2>
+        ${renderFilterBar()}
+        ${renderAdminTxTable()}
+      </section>
+      <section class="ops-panel">
+        <h2>System Health</h2>
+        ${renderSystemTable()}
+      </section>
+      <section class="ops-panel">
+        <h2>Vault Boundary</h2>
+        <ul class="security-list">${VAULT_SECURITY_RULES.map((rule) => `<li>${rule}</li>`).join("")}</ul>
+        <button data-action="encrypt-preview">Run AES-256 vault preview</button>
+        ${state.vaultPreview ? `<code class="vault-preview">${state.vaultPreview}</code>` : ""}
+      </section>
+      <section class="ops-panel">
+        <h2>Architecture</h2>
+        <div class="architecture-list">
+          ${SYSTEM_ARCHITECTURE.backend.api.map((service) => `<span>${service}</span>`).join("")}
+        </div>
+      </section>
+    </div>
+  `;
+}
+
+function renderMetric(label, value, subtext) {
+  return `
+    <div class="metric-tile">
+      <span>${label}</span>
+      <strong>${value}</strong>
+      <small>${subtext}</small>
+    </div>
+  `;
+}
+
+function renderFilterBar() {
+  return `
+    <div class="filter-bar">
+      ${["all", "pending", "confirmed", "failed"].map((filter) => `
+        <button class="${state.txFilter === filter ? "active" : ""}" data-action="tx-filter" data-filter="${filter}">${titleCase(filter)}</button>
+      `).join("")}
+    </div>
+  `;
+}
+
+function renderAdminTxTable() {
+  const rows = state.transactions
+    .filter((tx) => state.txFilter === "all" || tx.status.includes(state.txFilter))
+    .map((tx) => `
+      <tr>
+        <td><code>${compactHash(tx.txHash)}</code></td>
+        <td>${chainPill(tx.chain)}</td>
+        <td>${tx.userId}</td>
+        <td>${tx.walletId}</td>
+        <td>${tx.amountNative}</td>
+        <td>${tx.confirmations}</td>
+        <td>${statusPill(tx.status)}</td>
+      </tr>
+    `)
+    .join("");
+
+  return `
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Hash</th><th>Chain</th><th>User</th><th>Wallet</th><th>Amount</th><th>Conf</th><th>Status</th></tr></thead>
+        <tbody>${rows}</tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderSystemTable() {
+  return `
+    <div class="table-wrap">
+      <table>
+        <thead><tr><th>Chain</th><th>Status</th><th>Latest</th><th>Scanned</th><th>Lag</th><th>Latency</th><th>Errors</th></tr></thead>
+        <tbody>
+          ${state.systemStatus.map((chain) => `
+            <tr>
+              <td>${chainPill(chain.chain)}</td>
+              <td>${statusPill(chain.status)}</td>
+              <td>${chain.latestBlock.toLocaleString()}</td>
+              <td>${chain.scannedBlock.toLocaleString()}</td>
+              <td>${chain.latestBlock - chain.scannedBlock}</td>
+              <td>${chain.latencyMs}ms</td>
+              <td>${chain.errors}</td>
+            </tr>
+          `).join("")}
+        </tbody>
+      </table>
+    </div>
+  `;
+}
+
+function renderUsersView() {
+  return `
+    <section class="ops-panel full">
+      <h2>User Management</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>User</th><th>Email</th><th>Role</th><th>Status</th><th>Wallets</th><th>Last Seen</th><th>Risk</th></tr></thead>
+          <tbody>
+            ${state.users.map((user) => `
+              <tr>
+                <td>${user.id}</td>
+                <td>${user.email}</td>
+                <td>${titleCase(user.role)}</td>
+                <td>${statusPill(user.status)}</td>
+                <td>${state.wallets.filter((wallet) => wallet.userId === user.id).length}</td>
+                <td>${user.lastSeen}</td>
+                <td>${statusPill(user.risk)}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
+function renderWalletsView() {
+  return `
+    <section class="ops-panel full">
+      <h2>Wallet Inspection</h2>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Wallet</th><th>User</th><th>ETH Address</th><th>Balance</th><th>Status</th><th>Encrypted</th></tr></thead>
+          <tbody>
+            ${getWallets().map((wallet) => `
+              <tr>
+                <td>${wallet.label}</td>
+                <td>${wallet.userId}</td>
+                <td><code>${compactHash(wallet.addresses.ethereum)}</code></td>
+                <td>${money(wallet.mainBalanceUsd)}</td>
+                <td>${statusPill(wallet.status)}</td>
+                <td>${wallet.encrypted ? statusPill("active") : statusPill("failed")}</td>
+              </tr>
+            `).join("")}
+          </tbody>
+        </table>
+      </div>
+    </section>
+  `;
+}
+
+function renderTransactionsView() {
+  return `
+    <section class="ops-panel full">
+      <h2>Transaction Explorer</h2>
+      ${renderFilterBar()}
+      ${renderAdminTxTable()}
+    </section>
+  `;
+}
+
+function renderRpcView() {
+  return `
+    <section class="ops-panel full">
+      <h2>RPC / Ankr Status Monitor</h2>
+      ${renderSystemTable()}
+    </section>
+  `;
+}
+
+function renderMempoolView() {
+  const pending = state.transactions.filter((tx) => tx.status.includes("pending"));
+  return `
+    <div class="admin-grid">
+      ${renderMetric("Pending Queue", pending.length, "Ethereum priority")}
+      ${renderMetric("Median Delay", `${42 + state.syncTick * 3}s`, "block polling")}
+      ${renderMetric("P95 Delay", `${118 + state.syncTick * 4}s`, "mempool watch")}
+    </div>
+    <section class="ops-panel full">
+      <h2>Mempool Delay Monitor</h2>
+      ${renderTransactionFeed(false)}
+    </section>
+  `;
+}
+
+function renderIndexersView() {
+  return `
+    <section class="ops-panel full">
+      <h2>Indexing Worker Status</h2>
+      ${renderSystemTable()}
+      <div class="admin-log-strip">
+        ${state.adminLogs.map((log) => `<span><strong>${log.action}</strong><small>${log.target}</small></span>`).join("")}
+      </div>
+    </section>
+  `;
+}
+
+function renderShell() {
+  return `
+    <div class="app-shell">
+      <header class="app-header">
+        <div>
+          <span class="eyebrow">Multi-chain wallet + admin control</span>
+          <h1>${state.mode === "wallet" ? "Wallet App" : "Admin Panel"}</h1>
+        </div>
+        <nav class="mode-switch">
+          <button class="${state.mode === "wallet" ? "active" : ""}" data-action="wallet">Wallet</button>
+          <button class="${state.mode === "admin" ? "active" : ""}" data-action="admin">Admin</button>
+        </nav>
+      </header>
+      ${state.mode === "wallet" ? renderWallet() : renderAdmin()}
+      <footer class="iteration-footer">
+        <span>Iteration 1 implements screenshot-derived UI, Ankr-only service boundaries, Firebase schema, encrypted vault preview, pending tx flow, and computed balance rule.</span>
+      </footer>
+    </div>
+  `;
+}
+
+function render() {
+  app.innerHTML = renderShell();
+}
+
+function simulateHash() {
+  const bytes = crypto.getRandomValues(new Uint8Array(32));
+  return `0x${Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+}
+
+function simulateSend() {
+  const token = selectedToken();
+  const wallet = getWallets()[0];
+  const amount = Number(document.querySelector("#send-amount")?.value || "0.0414");
+  const amountUsd = amount * token.priceUsd;
+  state.transactions.unshift(
+    createLocalPendingTransaction({
+      userId: wallet.userId,
+      walletId: wallet.id,
+      chain: "ethereum",
+      from: activeAddress(),
+      to: document.querySelector("#send-to")?.value || "0xc41d21F18bD6932Aa0f7f6C16D00FD8A0270A621",
+      amountUsd,
+      amountNative: `${amount} ${token.symbol}`,
+      txHash: simulateHash(),
+    }),
+  );
+  state.walletScreen = "asset";
+  render();
+}
+
+function simulateIncoming() {
+  const token = selectedToken();
+  const wallet = getWallets()[0];
+  const amount = 0.025;
+  state.transactions.unshift(
+    createMempoolIncomingTransaction({
+      userId: wallet.userId,
+      walletId: wallet.id,
+      chain: "ethereum",
+      from: "0x22Bf954188Aef01Bc918D70288B6AfB847F17C91",
+      to: activeAddress(),
+      amountUsd: amount * token.priceUsd,
+      amountNative: `${amount} ${token.symbol}`,
+      txHash: simulateHash(),
+    }),
+  );
+  state.walletScreen = "asset";
+  render();
+}
+
+async function encryptPreview() {
+  const wallet = getWallets()[0];
+  const record = await encryptWalletPreview(
+    {
+      walletId: wallet.id,
+      privateKey: "redacted-placeholder-not-a-real-key",
+      addresses: wallet.addresses,
+    },
+    "preview-admin-passphrase",
+  );
+  state.vaultPreview = `${record.algorithm} · ${record.ciphertext.slice(0, 32)}... · keyId:${record.keyId}`;
+  render();
+}
+
+async function connectWallet() {
+  try {
+    state.liveStatus = "Connecting browser wallet...";
+    state.liveError = "";
+    render();
+    const connection = await connectInjectedWallet();
+    state.connectedChainId = connection.chainId;
+    setPrimaryAddress(connection.address);
+    state.liveStatus = "Browser wallet connected";
+    await persistState();
+    await syncLiveBalances();
+  } catch (error) {
+    state.liveError = error.message;
+    state.liveStatus = "Wallet connection failed";
+    render();
+  }
+}
+
+function saveConfigFromForm() {
+  const nextConfig = { ...state.runtimeConfig };
+  document.querySelectorAll("[data-config-field]").forEach((input) => {
+    nextConfig[input.dataset.configField] = input.value.trim();
+  });
+  state.runtimeConfig = saveRuntimeConfig(nextConfig);
+  state.liveStatus = "API config saved";
+  state.persistenceStatus = `Persistence mode: ${runtimeMode(state.runtimeConfig)}`;
+  render();
+}
+
+function updateTokenBalancesFromLive(nativeBalances) {
+  const priceByChain = {
+    ethereum: tokens.find((token) => token.id === "ethereum")?.priceUsd || 0,
+    bsc: tokens.find((token) => token.id === "bsc")?.priceUsd || 0,
+  };
+
+  const nextTokens = tokens.map((token) => {
+    if (token.id === "ethereum") {
+      const balance = nativeBalances.find((entry) => entry.chain === "ethereum" && entry.ok);
+      if (!balance) return token;
+      const amount = Number(balance.displayBalance);
+      return { ...token, balance: amount, valueUsd: amount * token.priceUsd };
+    }
+    if (token.id === "bsc") {
+      const balance = nativeBalances.find((entry) => entry.chain === "bsc" && entry.ok);
+      if (!balance) return token;
+      const amount = Number(balance.displayBalance);
+      return { ...token, balance: amount, valueUsd: amount * priceByChain.bsc };
+    }
+    return token;
+  });
+
+  tokens.splice(0, tokens.length, ...nextTokens);
+  const confirmedUsd = tokens.reduce((total, token) => total + (token.valueUsd || 0), 0);
+  state.wallets = state.wallets.map((wallet, index) => index === 0 ? { ...wallet, confirmedUsd } : wallet);
+}
+
+async function syncLiveBalances() {
+  const address = activeAddress();
+  if (!hasAnkr(state.runtimeConfig)) {
+    state.liveStatus = "Ankr key required";
+    state.liveError = "Paste an Ankr API key, save config, then sync again.";
+    render();
+    return;
+  }
+  try {
+    state.liveStatus = "Syncing Ankr balances...";
+    state.liveError = "";
+    render();
+    const rpc = rpcClient();
+    const [nativeBalances, tokenBalances, health] = await Promise.all([
+      fetchNativeBalances({ rpc, address }),
+      fetchRegisteredTokenBalances({ rpc, address }),
+      checkAnkrHealth({ rpc }),
+    ]);
+    state.liveBalances = nativeBalances;
+    state.tokenBalances = tokenBalances;
+    state.systemStatus = health.map((entry) => ({
+      chain: entry.chain,
+      status: entry.status,
+      latestBlock: entry.latestBlock,
+      scannedBlock: entry.scannedBlock,
+      latencyMs: entry.latencyMs,
+      errors: entry.errors,
+    }));
+    updateTokenBalancesFromLive(nativeBalances);
+    state.liveStatus = "Ankr sync complete";
+    await trackAndScan();
+    await persistState();
+  } catch (error) {
+    state.liveError = error.message;
+    state.liveStatus = "Ankr sync failed";
+  }
+  render();
+}
+
+async function sendLive() {
+  const token = selectedToken();
+  const wallet = activeWallet();
+  const amount = Number(document.querySelector("#send-amount")?.value || "0");
+  const to = document.querySelector("#send-to")?.value || "";
+  try {
+    state.liveStatus = "Waiting for browser wallet signature...";
+    render();
+    const txHash = await sendNativeEthereum({
+      from: activeAddress(),
+      to,
+      amount,
+    });
+    state.transactions.unshift(
+      createLocalPendingTransaction({
+        userId: wallet.userId,
+        walletId: wallet.id,
+        chain: "ethereum",
+        from: activeAddress(),
+        to,
+        amountUsd: amount * token.priceUsd,
+        amountNative: `${amount} ${token.symbol}`,
+        txHash,
+      }),
+    );
+    state.walletScreen = "asset";
+    state.liveStatus = "Broadcasted. Tracking pending transaction.";
+    await persistState();
+    await trackAndScan();
+  } catch (error) {
+    state.liveError = error.message;
+    state.liveStatus = "Send failed";
+  }
+  render();
+}
+
+async function persistState() {
+  const store = createStore(state.runtimeConfig);
+  const now = new Date().toISOString();
+  try {
+    state.persistenceStatus = `Syncing ${store.kind}...`;
+    const wallet = activeWallet();
+    const encryptedVault = await encryptWalletPreview(
+      {
+        walletId: wallet.id,
+        address: activeAddress(),
+        custody: state.connectedAddress ? "external-browser-wallet" : "no-private-key-in-browser",
+      },
+      `vault-${wallet.id}-${activeAddress()}`,
+    );
+    await Promise.all([
+      ...state.users.map((user) => store.upsert("users", user.id, { ...user, updatedAt: now })),
+      ...getWallets().map((walletRecord) => store.upsert("wallets", walletRecord.id, {
+        ...walletRecord,
+        vault: encryptedVault,
+        updatedAt: now,
+      })),
+      ...state.transactions.map((tx) => store.upsert("transactions", tx.id, { ...tx, updatedAt: now })),
+      ...state.systemStatus.map((status) => store.upsert("system_status", status.chain, { ...status, updatedAt: now })),
+    ]);
+    state.persistenceStatus = store.kind === "firebase"
+      ? "Firebase sync complete"
+      : store.kind === "backend"
+        ? "Backend API sync complete"
+        : "Local encrypted mirror synced";
+  } catch (error) {
+    state.persistenceStatus = `Persistence failed: ${error.message}`;
+  }
+}
+
+async function trackAndScan() {
+  const rpc = rpcClient();
+  const updates = await trackPendingTransactions({ rpc, transactions: state.transactions });
+  state.transactions = state.transactions.map((tx) => {
+    const lookup = updates.get(tx.id);
+    if (!lookup) return tx;
+    if (lookup.status === "confirmed") {
+      return {
+        ...tx,
+        status: "confirmed",
+        confirmations: lookup.confirmations,
+        updatedAt: new Date().toISOString(),
+      };
+    }
+    if (lookup.status === "failed") return { ...tx, status: "failed", updatedAt: new Date().toISOString() };
+    return { ...tx, confirmations: lookup.confirmations, updatedAt: new Date().toISOString() };
+  });
+
+  const ethereumStatus = state.systemStatus.find((entry) => entry.chain === "ethereum");
+  if (!ethereumStatus?.latestBlock) return;
+  const fromBlock = state.lastScannedEthereumBlock ? state.lastScannedEthereumBlock + 1 : ethereumStatus.latestBlock;
+  const toBlock = Math.min(ethereumStatus.latestBlock, fromBlock + 2);
+  if (fromBlock > toBlock) return;
+
+  const wallet = activeWallet();
+  const matches = await scanEthereumIncoming({
+    rpc,
+    address: activeAddress(),
+    wallet,
+    fromBlock,
+    toBlock,
+  });
+  state.lastScannedEthereumBlock = toBlock;
+  const knownHashes = new Set(state.transactions.map((tx) => tx.txHash));
+  matches
+    .filter((match) => !knownHashes.has(match.txHash))
+    .forEach((match) => {
+      state.transactions.unshift({
+        id: `scan-${match.txHash}`,
+        txHash: match.txHash,
+        userId: match.userId,
+        walletId: match.walletId,
+        chain: match.chain,
+        from: match.from,
+        to: match.to,
+        amountUsd: 0,
+        amountNative: `${match.amountNativeWei} wei`,
+        direction: "incoming",
+        source: "MEMPOOL",
+        status: "pending_mempool",
+        confirmations: 0,
+        firstSeenAt: new Date().toISOString(),
+      });
+    });
+}
+
+function bindEvents() {
+  app.addEventListener("click", (event) => {
+    const target = event.target.closest("[data-action]");
+    if (!target) return;
+
+    const action = target.dataset.action;
+    if (action === "wallet") state.mode = "wallet";
+    if (action === "admin") state.mode = "admin";
+    if (action === "screen") state.walletScreen = target.dataset.screen;
+    if (action === "token") {
+      state.selectedTokenId = target.dataset.token;
+      state.walletScreen = "asset";
+    }
+    if (action === "admin-view") state.adminView = target.dataset.view;
+    if (action === "tx-filter") state.txFilter = target.dataset.filter;
+    if (action === "simulate-send") simulateSend();
+    if (action === "simulate-incoming") simulateIncoming();
+    if (action === "encrypt-preview") encryptPreview();
+    if (action === "connect-wallet") connectWallet();
+    if (action === "save-config") saveConfigFromForm();
+    if (action === "sync-live") syncLiveBalances();
+    if (action === "send-live") sendLive();
+    if (action === "persist-state") persistState().then(render);
+
+    if (!["simulate-send", "simulate-incoming", "encrypt-preview", "connect-wallet", "save-config", "sync-live", "send-live", "persist-state"].includes(action)) {
+      render();
+    }
+  });
+
+  app.addEventListener("input", (event) => {
+    if (event.target.matches("[data-action='asset-search']")) {
+      state.assetSearch = event.target.value;
+      render();
+      const input = document.querySelector("[data-action='asset-search']");
+      input?.focus();
+      input?.setSelectionRange(state.assetSearch.length, state.assetSearch.length);
+    }
+  });
+}
+
+async function advanceRealtimeState() {
+  state.syncTick += 1;
+  if (state.runtimeConfig.enablePolling && state.liveBalances.length) {
+    try {
+      await trackAndScan();
+      await persistState();
+      state.liveStatus = "Live pending tracker tick";
+    } catch (error) {
+      state.liveError = error.message;
+      state.liveStatus = "Live pending tracker failed";
+    }
+    render();
+    return;
+  }
+
+  state.transactions = state.transactions.map((tx) => {
+    if (!tx.status.includes("pending")) return tx;
+    const confirmations = tx.confirmations + (tx.source === "MEMPOOL" ? 2 : 1);
+    if (confirmations >= 6) {
+      return {
+        ...tx,
+        status: "confirmed",
+        confirmations,
+        updatedAt: new Date().toISOString(),
+      };
+    }
+    return {
+      ...tx,
+      confirmations,
+      updatedAt: new Date().toISOString(),
+    };
+  });
+
+  state.systemStatus = state.systemStatus.map((chain, index) => ({
+    ...chain,
+    latestBlock: chain.latestBlock + 1 + (index % 2),
+    scannedBlock: chain.scannedBlock + 1,
+    latencyMs: Math.max(90, chain.latencyMs + (state.syncTick % 3) - 1),
+  }));
+
+  render();
+}
+
+bindEvents();
+render();
+setInterval(advanceRealtimeState, 5000);
+
+window.EXX_DEBUG = {
+  state,
+  UI_SPEC_JSON,
+  ADMIN_UI_SPEC_JSON,
+  SYSTEM_ARCHITECTURE,
+};
+
+    </script>
+  </body>
+</html>

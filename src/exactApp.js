@@ -1,0 +1,1968 @@
+const exactRoot = document.querySelector("#app");
+const exactAssets = window.EXX_EXACT_ASSETS || {};
+
+function exactDetectedDevice() {
+  if (window.EXX_FORCED_DEVICE === "android" || window.EXX_FORCED_DEVICE === "ios") return window.EXX_FORCED_DEVICE;
+  const nav = window.navigator || {};
+  const userAgent = nav.userAgent || "";
+  const platform = nav.platform || "";
+  if (/android/i.test(userAgent)) return "android";
+  if (/iphone|ipad|ipod/i.test(userAgent)) return "ios";
+  if (/mac/i.test(platform) && nav.maxTouchPoints > 1) return "ios";
+  return "ios";
+}
+
+const exactTokens = [
+  {
+    id: "bitcoin",
+    name: "Bitcoin",
+    symbol: "BTC",
+    assetKey: "btc",
+    tokenKind: "native",
+    price: "$59,474.35",
+    detailPrice: "$59,488.06",
+    change: "-2.6%",
+    detailChange: "+0.4%",
+    color: "#ffc629",
+    icon: "₿",
+    networks: [{ id: "bitcoin", label: "Bitcoin", tag: "BTC", feeSymbol: "BTC", address: "bc1qexoduspreviewwallet9h8a2f6r7m4z" }],
+    chart: [58, 76, 70, 68, 73, 79, 98, 80, 54, 70, 44, 47, 63, 56, 55, 35, 34, 28, 61, 63, 69, 78],
+  },
+  {
+    id: "ethereum",
+    name: "Ethereum",
+    symbol: "ETH",
+    assetKey: "eth",
+    tokenKind: "native",
+    price: "$1,560.86",
+    detailPrice: "$1,562.19",
+    change: "-3.5%",
+    detailChange: "+0.3%",
+    color: "#94a1ff",
+    icon: "◆",
+    networks: [
+      { id: "ethereum", label: "Ethereum", tag: "ETH", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "arbitrum", label: "Arbitrum One", tag: "ARB1", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "optimism", label: "Optimism", tag: "OP", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+    ],
+    chart: [78, 79, 80, 84, 82, 96, 78, 34, 45, 40, 37, 18, 27, 19, 29, 17, 14, 3, 8, 14, 6, 34, 28, 47, 49, 58],
+  },
+  {
+    id: "tether",
+    name: "Tether USD",
+    symbol: "USDT",
+    assetKey: "usdt",
+    tokenKind: "token",
+    price: "$1.00",
+    detailPrice: "$1.0005",
+    change: "+0%",
+    detailChange: "+0.0%",
+    color: "#45c8bb",
+    icon: "₮",
+    networks: [
+      { id: "ethereum", label: "Ethereum", tag: "ETH", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "bsc", label: "BNB Smart Chain", tag: "BSC", feeSymbol: "BNB", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "polygon", label: "Polygon", tag: "POL", feeSymbol: "POL", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "arbitrum", label: "Arbitrum One", tag: "ARB1", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "optimism", label: "Optimism", tag: "OP", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+    ],
+    chart: [70, 100, 58, 14, 43, 53, 35, 58, 51, 52, 72, 54, 79, 53, 52, 52, 56, 52, 52, 88, 88, 61, 59, 52, 63, 52, 54, 53, 55],
+  },
+  {
+    id: "usd-coin",
+    name: "USD Coin",
+    symbol: "USDC",
+    tokenKind: "token",
+    price: "$1.00",
+    change: "+0%",
+    color: "#2775ca",
+    icon: "$",
+    networks: [
+      { id: "ethereum", label: "Ethereum", tag: "ETH", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "polygon", label: "Polygon", tag: "POL", feeSymbol: "POL", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "bsc", label: "BNB Smart Chain", tag: "BSC", feeSymbol: "BNB", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "arbitrum", label: "Arbitrum One", tag: "ARB1", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "optimism", label: "Optimism", tag: "OP", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+    ],
+    chart: [52, 54, 53, 52, 56, 52, 54, 53, 52, 55, 53, 54, 52],
+  },
+  {
+    id: "dai",
+    name: "Dai Stablecoin",
+    symbol: "DAI",
+    tokenKind: "token",
+    price: "$1.00",
+    change: "+0%",
+    color: "#f5ac37",
+    icon: "D",
+    networks: [
+      { id: "ethereum", label: "Ethereum", tag: "ETH", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "polygon", label: "Polygon", tag: "POL", feeSymbol: "POL", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "arbitrum", label: "Arbitrum One", tag: "ARB1", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "optimism", label: "Optimism", tag: "OP", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+    ],
+    chart: [51, 52, 51, 53, 52, 52, 54, 52, 52, 53, 51, 52],
+  },
+  {
+    id: "wrapped-bitcoin",
+    name: "Wrapped Bitcoin",
+    symbol: "WBTC",
+    assetKey: "btc",
+    tokenKind: "token",
+    price: "$59,474.35",
+    change: "-2.6%",
+    color: "#f7931a",
+    icon: "₿",
+    networks: [
+      { id: "ethereum", label: "Ethereum", tag: "ETH", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "polygon", label: "Polygon", tag: "POL", feeSymbol: "POL", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "arbitrum", label: "Arbitrum One", tag: "ARB1", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "optimism", label: "Optimism", tag: "OP", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+    ],
+    chart: [58, 76, 70, 68, 73, 79, 98, 80, 54, 70, 44, 47, 63, 56, 55, 35, 34, 28, 61, 63, 69, 78],
+  },
+  {
+    id: "chainlink",
+    name: "Chainlink",
+    symbol: "LINK",
+    tokenKind: "token",
+    price: "$13.41",
+    change: "+1.1%",
+    color: "#375bd2",
+    icon: "⬡",
+    networks: [
+      { id: "ethereum", label: "Ethereum", tag: "ETH", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "polygon", label: "Polygon", tag: "POL", feeSymbol: "POL", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "arbitrum", label: "Arbitrum One", tag: "ARB1", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+      { id: "optimism", label: "Optimism", tag: "OP", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
+    ],
+    chart: [30, 38, 33, 44, 39, 58, 51, 63, 56, 72, 67, 82, 78],
+  },
+  {
+    id: "polygon",
+    name: "Polygon",
+    symbol: "POL",
+    tokenKind: "native",
+    price: "$0.21",
+    change: "-0.8%",
+    color: "#8247e5",
+    icon: "∞",
+    networks: [{ id: "polygon", label: "Polygon", tag: "POL", feeSymbol: "POL", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" }],
+    chart: [34, 42, 41, 49, 38, 44, 52, 58, 50, 62, 60, 67],
+  },
+  {
+    id: "bnb",
+    name: "BNB",
+    symbol: "BNB",
+    assetKey: "bnb",
+    tokenKind: "native",
+    price: "$604.12",
+    change: "+1.6%",
+    color: "#f3ba2f",
+    icon: "◆",
+    networks: [{ id: "bsc", label: "BNB Smart Chain", tag: "BSC", feeSymbol: "BNB", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" }],
+    chart: [48, 50, 55, 52, 58, 61, 57, 68, 66, 72, 77, 74],
+  },
+  {
+    id: "arbitrum",
+    name: "Arbitrum",
+    symbol: "ARB",
+    tokenKind: "native",
+    price: "$0.31",
+    change: "+2.4%",
+    color: "#4d8dff",
+    icon: "A",
+    networks: [{ id: "arbitrum", label: "Arbitrum One", tag: "ARB1", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" }],
+    chart: [34, 31, 40, 38, 45, 44, 52, 48, 61, 59, 67, 72],
+  },
+  {
+    id: "optimism",
+    name: "Optimism",
+    symbol: "OP",
+    tokenKind: "native",
+    price: "$0.51",
+    change: "-1.2%",
+    color: "#ff4b5c",
+    icon: "OP",
+    networks: [{ id: "optimism", label: "Optimism", tag: "OP", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" }],
+    chart: [52, 48, 50, 44, 43, 38, 42, 39, 47, 45, 52, 49],
+  },
+  { id: "xrp", name: "XRP", symbol: "XRP", assetKey: "xrp", tokenKind: "native", price: "$2.13", change: "+3.2%", color: "#15a7d6", icon: "×", networks: [{ id: "xrp", label: "XRP Ledger", tag: "XRP", feeSymbol: "XRP", address: "rExodusPreviewWallet2m2Y2yjNox" }], chart: [40, 48, 44, 59, 55, 68, 64, 70, 66, 76, 72, 80] },
+  { id: "solana", name: "Solana", symbol: "SOL", assetKey: "sol", tokenKind: "native", price: "$66.33", change: "-2.3%", color: "#24dfa6", icon: "≋", networks: [{ id: "solana", label: "Solana", tag: "SOL", feeSymbol: "SOL", address: "ExodusPreviewSolana8oZc7wY6mKiVGm" }], chart: [62, 58, 64, 61, 69, 66, 73, 70, 67, 72, 68, 75] },
+  { id: "tron", name: "Tron", symbol: "TRX", assetKey: "trx", tokenKind: "native", price: "$0.3235", change: "-1%", color: "#b31d36", icon: "▽", networks: [{ id: "tron", label: "Tron", tag: "TRX", feeSymbol: "TRX", address: "TExodusPreviewWalletRHNfxyJwqk" }], chart: [42, 44, 41, 47, 45, 52, 50, 48, 53, 51, 55, 54] },
+  { id: "dogecoin", name: "Dogecoin", symbol: "DOGE", assetKey: "doge", tokenKind: "native", price: "$0.0738", change: "-2.3%", color: "#c7b348", icon: "Ð", networks: [{ id: "dogecoin", label: "Dogecoin", tag: "DOGE", feeSymbol: "DOGE", address: "DExodusPreviewWallet8bd5e6g3" }], chart: [36, 42, 39, 51, 44, 58, 50, 54, 49, 61, 56, 64] },
+  { id: "cardano", name: "Cardano", symbol: "ADA", assetKey: "ada", tokenKind: "native", price: "$0.1418", change: "-3.3%", color: "#3479f6", icon: "✺", networks: [{ id: "cardano", label: "Cardano", tag: "ADA", feeSymbol: "ADA", address: "addr1exoduspreviewwallet4q4ka4" }], chart: [48, 42, 45, 39, 41, 36, 40, 34, 38, 32, 35, 31] },
+  { id: "litecoin", name: "Litecoin", symbol: "LTC", assetKey: "ltc", tokenKind: "native", price: "$40.82", change: "+0%", color: "#d7d8dc", icon: "Ł", networks: [{ id: "litecoin", label: "Litecoin", tag: "LTC", feeSymbol: "LTC", address: "ltc1qexoduspreviewwalletc2wjr8" }], chart: [40, 41, 39, 43, 42, 45, 44, 43, 46, 45, 47, 46] },
+  { id: "xocash", name: "XO Cash", symbol: "XO", assetKey: "xo", tokenKind: "token", price: "$1.00", change: "+0%", color: "#18d943", icon: "XO", networks: [{ id: "ethereum", label: "Ethereum", tag: "ETH", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" }], chart: [52, 53, 52, 54, 52, 53, 52] },
+];
+
+const exactAnkrNetworkIds = [
+  "ethereum",
+  "polygon",
+  "bsc",
+  "arbitrum",
+  "optimism",
+  "base",
+  "avalanche",
+  "fantom",
+  "gnosis",
+  "linea",
+  "scroll",
+  "flare",
+  "story",
+  "syscoin",
+  "taiko",
+  "telos",
+  "xai",
+  "xlayer",
+  "stellar",
+];
+
+const exactChainFilters = [
+  ["main", "Main"],
+  ["all", "All"],
+  ["tokens", "Tokens"],
+  ["ethereum", "ETH"],
+  ["polygon", "POL"],
+  ["bsc", "BSC"],
+  ["arbitrum", "ARB1"],
+  ["optimism", "OP"],
+  ["base", "BASE"],
+  ["avalanche", "AVAX"],
+  ["fantom", "FTM"],
+  ["gnosis", "GNO"],
+  ["linea", "LINEA"],
+  ["scroll", "SCR"],
+  ["flare", "FLR"],
+  ["story", "IP"],
+  ["syscoin", "SYS"],
+  ["taiko", "TAIKO"],
+  ["telos", "TLOS"],
+  ["xai", "XAI"],
+  ["xlayer", "XLAYER"],
+  ["stellar", "XLM"],
+  ["bitcoin", "BTC"],
+  ["solana", "SOL"],
+  ["tron", "TRX"],
+  ["xrp", "XRP"],
+  ["dogecoin", "DOGE"],
+  ["cardano", "ADA"],
+  ["litecoin", "LTC"],
+  ["hyperevm", "HYPE"],
+  ["zcash", "ZEC"],
+  ["ton", "TON"],
+];
+
+const exactPortfolioHoldings = {
+  bitcoin: { amount: "2.90484389", value: 10689.42 },
+  ethereum: { amount: "5.2321", value: 8174.76 },
+  bnb: { amount: "12.011", value: 7255.04 },
+  solana: { amount: "82.55", value: 5476.23 },
+  tether: { amount: "4,250", value: 4250 },
+  tron: { amount: "4,000", value: 1293.88 },
+  dogecoin: { amount: "11,005", value: 812.2 },
+  xrp: { amount: "248.37", value: 529.02 },
+};
+
+const exactNetworkMeta = {
+  ethereum: { label: "Ethereum", tag: "ETH", badge: "◆", color: "#94a1ff" },
+  polygon: { label: "Polygon", tag: "POL", badge: "∞", color: "#8247e5" },
+  bsc: { label: "BNB Smart Chain", tag: "BSC", badge: "◆", color: "#f3ba2f" },
+  arbitrum: { label: "Arbitrum One", tag: "ARB1", badge: "A", color: "#4d8dff" },
+  optimism: { label: "Optimism", tag: "OP", badge: "OP", color: "#ff4b5c" },
+  bitcoin: { label: "Bitcoin", tag: "BTC", badge: "₿", color: "#ffc629" },
+  solana: { label: "Solana", tag: "SOL", badge: "≋", color: "#24dfa6" },
+  tron: { label: "Tron", tag: "TRX", badge: "▽", color: "#b31d36" },
+  dogecoin: { label: "Dogecoin", tag: "DOGE", badge: "Ð", color: "#c7b348" },
+  cardano: { label: "Cardano", tag: "ADA", badge: "✺", color: "#3479f6" },
+  litecoin: { label: "Litecoin", tag: "LTC", badge: "Ł", color: "#d7d8dc" },
+  xrp: { label: "XRP Ledger", tag: "XRP", badge: "×", color: "#15a7d6" },
+};
+
+Object.assign(exactNetworkMeta, {
+  base: { label: "Base", tag: "BASE", badge: "B", color: "#4f8dff" },
+  avalanche: { label: "Avalanche", tag: "AVAX", badge: "A", color: "#e84142" },
+  fantom: { label: "Fantom", tag: "FTM", badge: "F", color: "#1969ff" },
+  gnosis: { label: "Gnosis", tag: "GNO", badge: "G", color: "#48a987" },
+  linea: { label: "Linea", tag: "LINEA", badge: "L", color: "#72f0b0" },
+  scroll: { label: "Scroll", tag: "SCR", badge: "S", color: "#f4d4aa" },
+  flare: { label: "Flare", tag: "FLR", badge: "F", color: "#e62058" },
+  story: { label: "Story", tag: "IP", badge: "IP", color: "#72e2ff" },
+  syscoin: { label: "Syscoin", tag: "SYS", badge: "S", color: "#00a4ff" },
+  taiko: { label: "Taiko", tag: "TAIKO", badge: "T", color: "#e81899" },
+  telos: { label: "Telos", tag: "TLOS", badge: "T", color: "#7048e8" },
+  xai: { label: "Xai", tag: "XAI", badge: "X", color: "#f24a62" },
+  xlayer: { label: "X Layer", tag: "XLAYER", badge: "X", color: "#121212" },
+  stellar: { label: "Stellar", tag: "XLM", badge: "S", color: "#dce3ef" },
+  hyperevm: { label: "HyperEVM", tag: "HYPE", badge: "H", color: "#18d2a3" },
+  zcash: { label: "Zcash", tag: "ZEC", badge: "Z", color: "#f4c431" },
+  ton: { label: "Toncoin", tag: "TON", badge: "T", color: "#2fb6e8" },
+});
+
+const exactPreviewAddress = "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289";
+const exactEvmTokenNetworks = [
+  { id: "ethereum", label: "Ethereum", tag: "ETH", feeSymbol: "ETH", address: exactPreviewAddress },
+  { id: "polygon", label: "Polygon", tag: "POL", feeSymbol: "POL", address: exactPreviewAddress },
+  { id: "bsc", label: "BNB Smart Chain", tag: "BSC", feeSymbol: "BNB", address: exactPreviewAddress },
+  { id: "arbitrum", label: "Arbitrum One", tag: "ARB1", feeSymbol: "ETH", address: exactPreviewAddress },
+  { id: "optimism", label: "Optimism", tag: "OP", feeSymbol: "ETH", address: exactPreviewAddress },
+  { id: "base", label: "Base", tag: "BASE", feeSymbol: "ETH", address: exactPreviewAddress },
+  { id: "avalanche", label: "Avalanche", tag: "AVAX", feeSymbol: "AVAX", address: exactPreviewAddress },
+];
+
+function exactMergeTokenNetworks(tokenId, networks) {
+  const token = exactTokens.find((item) => item.id === tokenId);
+  if (!token) return;
+  const seen = new Set(token.networks.map((network) => network.id));
+  token.networks.push(...networks.filter((network) => !seen.has(network.id)));
+}
+
+exactMergeTokenNetworks("tether", exactEvmTokenNetworks);
+exactMergeTokenNetworks("usd-coin", exactEvmTokenNetworks);
+exactMergeTokenNetworks("dai", exactEvmTokenNetworks.filter((network) => !["bsc"].includes(network.id)));
+exactMergeTokenNetworks("wrapped-bitcoin", exactEvmTokenNetworks.filter((network) => !["bsc", "avalanche"].includes(network.id)));
+exactMergeTokenNetworks("chainlink", exactEvmTokenNetworks.filter((network) => !["bsc"].includes(network.id)));
+
+exactTokens.push(
+  { id: "base-eth", name: "Base Ethereum", symbol: "ETH", tokenKind: "native", price: "$1,560.86", detailPrice: "$1,562.19", change: "+0.3%", detailChange: "+0.3%", color: "#4f8dff", icon: "B", networks: [{ id: "base", label: "Base", tag: "BASE", feeSymbol: "ETH", address: exactPreviewAddress }], chart: [52, 56, 54, 61, 58, 69, 63, 72, 70, 78, 74, 82] },
+  { id: "avalanche", name: "Avalanche", symbol: "AVAX", tokenKind: "native", price: "$27.70", change: "+1.8%", color: "#e84142", icon: "A", networks: [{ id: "avalanche", label: "Avalanche", tag: "AVAX", feeSymbol: "AVAX", address: exactPreviewAddress }], chart: [44, 48, 46, 52, 57, 55, 63, 61, 70, 67, 73, 76] },
+  { id: "fantom", name: "Fantom", symbol: "FTM", tokenKind: "native", price: "$0.36", change: "-0.7%", color: "#1969ff", icon: "F", networks: [{ id: "fantom", label: "Fantom", tag: "FTM", feeSymbol: "FTM", address: exactPreviewAddress }], chart: [58, 55, 53, 56, 49, 52, 47, 51, 46, 48, 45, 50] },
+  { id: "gnosis", name: "Gnosis", symbol: "xDAI", tokenKind: "native", price: "$1.00", change: "+0%", color: "#48a987", icon: "G", networks: [{ id: "gnosis", label: "Gnosis", tag: "GNO", feeSymbol: "xDAI", address: exactPreviewAddress }], chart: [52, 52, 53, 52, 54, 52, 53, 52, 52, 53, 52, 52] },
+  { id: "linea-eth", name: "Linea Ethereum", symbol: "ETH", tokenKind: "native", price: "$1,560.86", change: "+0.3%", color: "#72f0b0", icon: "L", networks: [{ id: "linea", label: "Linea", tag: "LINEA", feeSymbol: "ETH", address: exactPreviewAddress }], chart: [49, 54, 52, 60, 57, 65, 61, 71, 68, 76, 73, 80] },
+  { id: "scroll-eth", name: "Scroll Ethereum", symbol: "ETH", tokenKind: "native", price: "$1,560.86", change: "+0.3%", color: "#f4d4aa", icon: "S", networks: [{ id: "scroll", label: "Scroll", tag: "SCR", feeSymbol: "ETH", address: exactPreviewAddress }], chart: [46, 50, 52, 51, 59, 58, 64, 62, 70, 68, 73, 79] },
+  { id: "flare", name: "Flare", symbol: "FLR", tokenKind: "native", price: "$0.014", change: "+0.9%", color: "#e62058", icon: "F", networks: [{ id: "flare", label: "Flare", tag: "FLR", feeSymbol: "FLR", address: exactPreviewAddress }], chart: [42, 45, 44, 48, 46, 53, 51, 55, 54, 58, 57, 61] },
+  { id: "story", name: "Story", symbol: "IP", tokenKind: "native", price: "$3.42", change: "+2.1%", color: "#72e2ff", icon: "IP", networks: [{ id: "story", label: "Story", tag: "IP", feeSymbol: "IP", address: exactPreviewAddress }], chart: [41, 44, 50, 47, 56, 54, 62, 59, 67, 70, 73, 78] },
+  { id: "syscoin", name: "Syscoin", symbol: "SYS", tokenKind: "native", price: "$0.066", change: "-0.4%", color: "#00a4ff", icon: "S", networks: [{ id: "syscoin", label: "Syscoin", tag: "SYS", feeSymbol: "SYS", address: exactPreviewAddress }], chart: [52, 50, 51, 48, 49, 46, 48, 45, 47, 44, 46, 48] },
+  { id: "taiko", name: "Taiko", symbol: "TAIKO", tokenKind: "native", price: "$0.56", change: "+1.3%", color: "#e81899", icon: "T", networks: [{ id: "taiko", label: "Taiko", tag: "TAIKO", feeSymbol: "ETH", address: exactPreviewAddress }], chart: [40, 45, 43, 51, 48, 57, 54, 60, 58, 66, 63, 70] },
+  { id: "telos", name: "Telos", symbol: "TLOS", tokenKind: "native", price: "$0.071", change: "+0.2%", color: "#7048e8", icon: "T", networks: [{ id: "telos", label: "Telos", tag: "TLOS", feeSymbol: "TLOS", address: exactPreviewAddress }], chart: [48, 49, 47, 50, 52, 51, 54, 53, 56, 55, 57, 58] },
+  { id: "xai", name: "Xai", symbol: "XAI", tokenKind: "native", price: "$0.065", change: "-1.7%", color: "#f24a62", icon: "X", networks: [{ id: "xai", label: "Xai", tag: "XAI", feeSymbol: "XAI", address: exactPreviewAddress }], chart: [61, 58, 55, 57, 52, 54, 50, 48, 51, 47, 49, 46] },
+  { id: "xlayer", name: "X Layer", symbol: "OKB", tokenKind: "native", price: "$49.21", change: "+0.5%", color: "#cfd5df", icon: "X", networks: [{ id: "xlayer", label: "X Layer", tag: "XLAYER", feeSymbol: "OKB", address: exactPreviewAddress }], chart: [53, 55, 56, 54, 59, 58, 62, 61, 64, 63, 66, 68] },
+  { id: "stellar", name: "Stellar", symbol: "XLM", tokenKind: "native", price: "$0.25", change: "+1.1%", color: "#dce3ef", icon: "S", networks: [{ id: "stellar", label: "Stellar", tag: "XLM", feeSymbol: "XLM", address: "GEXODUSPREVIEWSTELLARWALLET9H8A2F6R7M4Z" }], chart: [44, 46, 48, 45, 52, 50, 56, 54, 58, 57, 62, 64] },
+  { id: "hyper-evm", name: "HyperEVM", symbol: "HYPE", tokenKind: "native", price: "$38.16", change: "+2.8%", color: "#18d2a3", icon: "H", networks: [{ id: "hyperevm", label: "HyperEVM", tag: "HYPE", feeSymbol: "HYPE", address: exactPreviewAddress }], chart: [50, 52, 55, 53, 62, 59, 68, 66, 74, 72, 79, 83] },
+  { id: "zcash", name: "Zcash", symbol: "ZEC", tokenKind: "native", price: "$35.29", change: "-0.6%", color: "#f4c431", icon: "Z", networks: [{ id: "zcash", label: "Zcash", tag: "ZEC", feeSymbol: "ZEC", address: "t1ExodusPreviewZcashWallet8bd5e6g3" }], chart: [55, 52, 50, 53, 48, 51, 47, 49, 46, 48, 45, 47] },
+  { id: "toncoin", name: "Toncoin", symbol: "TON", tokenKind: "native", price: "$3.18", change: "+0.4%", color: "#2fb6e8", icon: "T", networks: [{ id: "ton", label: "Toncoin", tag: "TON", feeSymbol: "TON", address: "UQExodusPreviewTonWallet7w2na6r3" }], chart: [47, 49, 51, 50, 54, 53, 57, 56, 60, 59, 62, 64] },
+  { id: "uniswap", name: "Uniswap", symbol: "UNI", tokenKind: "token", price: "$9.14", change: "+1.4%", color: "#ff55aa", icon: "U", networks: exactEvmTokenNetworks.filter((network) => !["bsc", "avalanche"].includes(network.id)), chart: [35, 40, 38, 45, 50, 48, 59, 56, 63, 61, 69, 72] },
+  { id: "aave", name: "Aave", symbol: "AAVE", tokenKind: "token", price: "$267.44", change: "+0.8%", color: "#9b7cff", icon: "A", networks: exactEvmTokenNetworks.filter((network) => network.id !== "bsc"), chart: [52, 51, 55, 54, 58, 62, 60, 65, 63, 70, 68, 73] },
+  { id: "shiba-inu", name: "Shiba Inu", symbol: "SHIB", tokenKind: "token", price: "$0.000011", change: "-1.5%", color: "#f1862f", icon: "S", networks: exactEvmTokenNetworks.filter((network) => ["ethereum", "base"].includes(network.id)), chart: [58, 54, 50, 55, 49, 45, 48, 44, 42, 46, 43, 41] },
+  { id: "pepe", name: "Pepe", symbol: "PEPE", tokenKind: "token", price: "$0.000009", change: "+2.2%", color: "#64d65e", icon: "P", networks: exactEvmTokenNetworks.filter((network) => ["ethereum", "base", "arbitrum"].includes(network.id)), chart: [41, 44, 52, 48, 61, 57, 69, 66, 75, 71, 80, 78] },
+  { id: "render", name: "Render", symbol: "RENDER", tokenKind: "token", price: "$3.74", change: "+0.7%", color: "#ff4b4b", icon: "R", networks: exactEvmTokenNetworks.filter((network) => ["ethereum", "polygon", "base"].includes(network.id)), chart: [45, 47, 50, 49, 56, 54, 60, 58, 65, 64, 70, 72] },
+  { id: "the-graph", name: "The Graph", symbol: "GRT", tokenKind: "token", price: "$0.081", change: "-0.3%", color: "#795bff", icon: "G", networks: exactEvmTokenNetworks.filter((network) => ["ethereum", "arbitrum"].includes(network.id)), chart: [56, 54, 52, 55, 51, 53, 49, 50, 48, 51, 49, 52] },
+  { id: "paypal-usd", name: "PayPal USD", symbol: "PYUSD", tokenKind: "token", price: "$1.00", change: "+0%", color: "#2d7ff9", icon: "$", networks: exactEvmTokenNetworks.filter((network) => ["ethereum", "base"].includes(network.id)), chart: [52, 53, 52, 52, 53, 52, 53, 52, 52, 53, 52, 52] },
+  { id: "euro-coin", name: "EURC", symbol: "EURC", tokenKind: "token", price: "$1.07", change: "+0.1%", color: "#2474ff", icon: "€", networks: exactEvmTokenNetworks.filter((network) => ["ethereum", "base", "avalanche"].includes(network.id)), chart: [52, 54, 53, 55, 54, 56, 55, 57, 56, 58, 57, 59] },
+);
+
+Object.assign(exactPortfolioHoldings, {
+  polygon: { amount: "950", value: 199.5 },
+  "usd-coin": { amount: "1,200", value: 1200 },
+  chainlink: { amount: "22.4", value: 300.38 },
+  avalanche: { amount: "18.5", value: 512.45 },
+  "base-eth": { amount: "0.75", value: 1170.64 },
+  uniswap: { amount: "34", value: 310.42 },
+  aave: { amount: "1.6", value: 427.9 },
+  stellar: { amount: "1,589.01", value: 397.25 },
+});
+
+const exactInitialTransactions = [
+  {
+    id: "tx-pending-eth-out",
+    token: "ethereum",
+    network: "ethereum",
+    direction: "outgoing",
+    status: "pending",
+    amount: "-0.0414 ETH",
+    value: "$64.75",
+    title: "Sent",
+    day: "Pending",
+    time: "Pending",
+    hash: "0xa3f49b299ce7f04d8e861188377aa4698a99f3cb932a512f581d44ac9dcad001",
+  },
+  {
+    id: "tx-pending-eth",
+    token: "ethereum",
+    network: "ethereum",
+    direction: "incoming",
+    status: "pending",
+    amount: "+0.0825 ETH",
+    value: "$128.90",
+    title: "Received",
+    day: "Pending",
+    time: "Pending",
+    hash: "0x15a96890e29f22a08d175ccb681aef3208e5be38209abef159f200bd70ad0002",
+  },
+  {
+    id: "tx-received-eth",
+    token: "ethereum",
+    network: "ethereum",
+    direction: "incoming",
+    status: "confirmed",
+    amount: "+0.214 ETH",
+    value: "$334.24",
+    title: "Received",
+    day: "Yesterday",
+    time: "16:42:10 EST",
+    hash: "0x4c7a6890e29f22a08d175ccb681aef3208e5be38209abef159f200bd70ad0005",
+  },
+  {
+    id: "tx-sent-eth",
+    token: "ethereum",
+    network: "ethereum",
+    direction: "outgoing",
+    status: "confirmed",
+    amount: "-0.075 ETH",
+    value: "$117.16",
+    title: "Sent",
+    day: "Yesterday",
+    time: "11:08:55 EST",
+    hash: "0x7d5e299ce7f04d8e861188377aa4698a99f3cb932a512f581d44ac9dcad006",
+  },
+  {
+    id: "tx-confirmed-btc",
+    token: "bitcoin",
+    network: "bitcoin",
+    direction: "incoming",
+    status: "confirmed",
+    amount: "+0.03940246 BTC",
+    value: "$141.86",
+    title: "Received",
+    day: "Yesterday",
+    time: "15:01:18 EST",
+    hash: "0x29ee8a161127120d13f8232cd932248c601da359133a12f4884a1b009dbe0003",
+  },
+  {
+    id: "tx-usdt",
+    token: "tether",
+    network: "ethereum",
+    direction: "incoming",
+    status: "pending",
+    amount: "+42 USDT",
+    value: "$42.00",
+    title: "Received",
+    day: "Pending",
+    time: "Pending",
+    hash: "0xb1192a79d227913d62b7f22139fc4120ee51d2da894fa8875de50a6f6fed0004",
+  },
+  {
+    id: "tx-bnb-failed",
+    token: "bnb",
+    network: "bsc",
+    direction: "outgoing",
+    status: "confirmed",
+    amount: "-0.35 BNB",
+    value: "$211.44",
+    title: "Sent",
+    day: "Today",
+    time: "09:42:04 EST",
+    hash: "0x5be90d22d338dc640c740534ff1f2dc39dd9fc784802117d98deca000005",
+  },
+  {
+    id: "tx-sol-confirmed",
+    token: "solana",
+    network: "solana",
+    direction: "incoming",
+    status: "confirmed",
+    amount: "+1.25 SOL",
+    value: "$82.91",
+    title: "Received",
+    day: "Yesterday",
+    time: "12:30:19 EST",
+    hash: "0x2c3a433bbfcf517471ffbda006",
+  },
+];
+
+const exactState = {
+  preview: "mobile",
+  device: exactDetectedDevice(),
+  screen: "landing",
+  selected: "ethereum",
+  landingSlide: 0,
+  assetSearch: "",
+  expandedAsset: "ethereum",
+  onboardingMode: "",
+  passwordSet: false,
+  sendAmount: "",
+  sendTo: "",
+  toast: "",
+  activeRange: "LIVE",
+  returnToScreen: "",
+  screenHistory: [],
+  holdingsSort: "highest",
+  showHoldingsSort: false,
+  collapsedAssets: new Set(),
+  transactions: exactInitialTransactions.map((transaction) => ({ ...transaction })),
+  assetFilter: "main",
+  selectedNetworkByToken: {
+    bitcoin: "bitcoin",
+    ethereum: "ethereum",
+    tether: "ethereum",
+    "usd-coin": "ethereum",
+    dai: "ethereum",
+    "wrapped-bitcoin": "ethereum",
+    chainlink: "ethereum",
+    polygon: "polygon",
+    bnb: "bsc",
+    arbitrum: "arbitrum",
+    optimism: "optimism",
+    xrp: "xrp",
+    solana: "solana",
+    tron: "tron",
+    dogecoin: "dogecoin",
+    cardano: "cardano",
+    litecoin: "litecoin",
+    xocash: "ethereum",
+    "base-eth": "base",
+    avalanche: "avalanche",
+    fantom: "fantom",
+    gnosis: "gnosis",
+    "linea-eth": "linea",
+    "scroll-eth": "scroll",
+    flare: "flare",
+    story: "story",
+    syscoin: "syscoin",
+    taiko: "taiko",
+    telos: "telos",
+    xai: "xai",
+    xlayer: "xlayer",
+    stellar: "stellar",
+    "hyper-evm": "hyperevm",
+    zcash: "zcash",
+    toncoin: "ton",
+    uniswap: "ethereum",
+    aave: "ethereum",
+    "shiba-inu": "ethereum",
+    pepe: "ethereum",
+    render: "ethereum",
+    "the-graph": "ethereum",
+    "paypal-usd": "ethereum",
+    "euro-coin": "ethereum",
+  },
+  enabledNetworkKeys: new Set([
+    "bitcoin:bitcoin",
+    "ethereum:ethereum",
+    "tether:ethereum",
+    "usd-coin:base",
+    "bnb:bsc",
+    "polygon:polygon",
+    "chainlink:ethereum",
+    "base-eth:base",
+    "avalanche:avalanche",
+    "xrp:xrp",
+    "solana:solana",
+    "tron:tron",
+    "dogecoin:dogecoin",
+    "uniswap:ethereum",
+    "aave:ethereum",
+    "stellar:stellar",
+  ]),
+  restorePhrase: "",
+};
+
+const exactSeedWords = [
+  "orbit",
+  "velvet",
+  "harbor",
+  "signal",
+  "ripple",
+  "anchor",
+  "planet",
+  "ember",
+  "castle",
+  "voyage",
+  "silver",
+  "matrix",
+];
+
+function exactToken() {
+  return exactTokens.find((token) => token.id === exactState.selected) || exactTokens[1];
+}
+
+function exactNetworks(token) {
+  return token.networks?.length ? token.networks : [{ id: token.id, label: token.name, tag: token.symbol, feeSymbol: token.symbol }];
+}
+
+function exactNetworkKey(tokenId, networkId) {
+  return `${tokenId}:${networkId}`;
+}
+
+function exactEnabledNetworks(token) {
+  return exactNetworks(token).filter((network) => exactState.enabledNetworkKeys.has(exactNetworkKey(token.id, network.id)));
+}
+
+function exactTokenEnabled(token) {
+  return exactEnabledNetworks(token).length > 0;
+}
+
+function exactSelectedNetwork(token = exactToken()) {
+  const networks = exactNetworks(token);
+  const selected = exactState.selectedNetworkByToken[token.id];
+  return networks.find((network) => network.id === selected)
+    || exactEnabledNetworks(token)[0]
+    || networks[0];
+}
+
+function exactSetSelectedNetwork(tokenId, networkId) {
+  exactState.selectedNetworkByToken[tokenId] = networkId;
+}
+
+function exactToggleNetwork(token, network) {
+  const key = exactNetworkKey(token.id, network.id);
+  if (exactState.enabledNetworkKeys.has(key)) {
+    if (exactState.selectedNetworkByToken[token.id] !== network.id) {
+      exactSetSelectedNetwork(token.id, network.id);
+      exactState.toast = `${token.symbol} switched to ${network.label}`;
+      return;
+    }
+    exactState.enabledNetworkKeys.delete(key);
+    const remaining = exactEnabledNetworks(token);
+    if (exactState.selectedNetworkByToken[token.id] === network.id) {
+      exactSetSelectedNetwork(token.id, (remaining[0] || exactNetworks(token)[0]).id);
+    }
+    exactState.toast = `${token.symbol} removed on ${network.label}`;
+  } else {
+    exactState.enabledNetworkKeys.add(key);
+    exactSetSelectedNetwork(token.id, network.id);
+    exactState.toast = `${token.symbol} added on ${network.label}`;
+  }
+}
+
+function exactToggleEnabledNetwork(token, network) {
+  const key = exactNetworkKey(token.id, network.id);
+  if (exactState.enabledNetworkKeys.has(key)) {
+    exactState.enabledNetworkKeys.delete(key);
+    const remaining = exactEnabledNetworks(token);
+    if (exactState.selectedNetworkByToken[token.id] === network.id) {
+      exactSetSelectedNetwork(token.id, (remaining[0] || exactNetworks(token)[0]).id);
+    }
+    exactState.toast = `${token.symbol} removed on ${network.label}`;
+  } else {
+    exactState.enabledNetworkKeys.add(key);
+    exactSetSelectedNetwork(token.id, network.id);
+    exactState.toast = `${token.symbol} added on ${network.label}`;
+  }
+}
+
+function exactNetworkBadge(network, className = "") {
+  const meta = exactNetworkMeta[network.id] || network;
+  return `<span class="real-network-badge ${className}" style="--net:${meta.color || "#8f83ff"}">${meta.badge || network.tag}</span>`;
+}
+
+function exactNetworkLabel(token = exactToken()) {
+  return exactSelectedNetwork(token).label;
+}
+
+function exactNetworkShort(token = exactToken()) {
+  return exactSelectedNetwork(token).tag || exactSelectedNetwork(token).label;
+}
+
+function exactNetworkFeeSymbol(token = exactToken()) {
+  return exactSelectedNetwork(token).feeSymbol || exactNetworkShort(token);
+}
+
+function exactReceiveAddress(token = exactToken()) {
+  return exactSelectedNetwork(token).address || "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289";
+}
+
+function exactHexToRgb(color) {
+  const match = String(color).trim().match(/^#?([0-9a-f]{6})$/i);
+  if (!match) return { r: 143, g: 131, b: 255 };
+  const value = Number.parseInt(match[1], 16);
+  return { r: (value >> 16) & 255, g: (value >> 8) & 255, b: value & 255 };
+}
+
+function exactMixColor(color, target, amount) {
+  const base = exactHexToRgb(color);
+  const other = exactHexToRgb(target);
+  const mix = (channel) => Math.round(base[channel] + ((other[channel] - base[channel]) * amount));
+  return `rgb(${mix("r")} ${mix("g")} ${mix("b")})`;
+}
+
+function exactHexSvg(token, mark, background = token.color || "#8f83ff") {
+  const safeId = `icon-${String(token.id || token.symbol).replace(/[^a-z0-9]/gi, "-")}`;
+  const high = exactMixColor(background, "#ffffff", 0.32);
+  const low = exactMixColor(background, "#000000", 0.32);
+  return `<svg viewBox="0 0 64 64" aria-hidden="true">
+    <defs>
+      <linearGradient id="${safeId}-face" x1="14" y1="7" x2="52" y2="58" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="${high}"/>
+        <stop offset="0.52" stop-color="${background}"/>
+        <stop offset="1" stop-color="${low}"/>
+      </linearGradient>
+      <linearGradient id="${safeId}-rim" x1="16" y1="4" x2="50" y2="60" gradientUnits="userSpaceOnUse">
+        <stop offset="0" stop-color="rgba(255,255,255,.52)"/>
+        <stop offset=".45" stop-color="rgba(255,255,255,.12)"/>
+        <stop offset="1" stop-color="rgba(0,0,0,.34)"/>
+      </linearGradient>
+      <radialGradient id="${safeId}-glow" cx="34%" cy="25%" r="63%">
+        <stop offset="0" stop-color="rgba(255,255,255,.35)"/>
+        <stop offset=".44" stop-color="rgba(255,255,255,.09)"/>
+        <stop offset="1" stop-color="rgba(255,255,255,0)"/>
+      </radialGradient>
+    </defs>
+    <path d="M32 3.2 56.8 17.6v28.8L32 60.8 7.2 46.4V17.6Z" fill="url(#${safeId}-rim)"/>
+    <path d="M32 6.2 53.9 18.9v26.2L32 57.8 10.1 45.1V18.9Z" fill="url(#${safeId}-face)"/>
+    <path d="M32 6.2 53.9 18.9 32 31.7 10.1 18.9Z" fill="url(#${safeId}-glow)" opacity=".9"/>
+    <path d="M13 45 32 56 51 45" fill="none" stroke="rgba(0,0,0,.18)" stroke-width="2"/>
+    <g class="coin-mark">${mark}</g>
+  </svg>`;
+}
+
+function exactTextMark(text, size = 22, y = 39, fill = "#fff", weight = 850) {
+  return `<text x="32" y="${y}" text-anchor="middle" font-size="${size}" font-weight="${weight}" fill="${fill}" font-family="Inter, Arial, sans-serif">${text}</text>`;
+}
+
+function exactLogoSvg(token) {
+  const id = token.id;
+  const symbol = token.symbol;
+  const lowerSymbol = String(symbol).toLowerCase();
+  const backgroundById = {
+    bitcoin: "#f6b92f",
+    "wrapped-bitcoin": "#f6b92f",
+    ethereum: "#6873ad",
+    "base-eth": "#6873ad",
+    "linea-eth": "#6873ad",
+    "scroll-eth": "#6873ad",
+    tether: "#35c4b6",
+    "usd-coin": "#2775ca",
+    bnb: "#f3ba2f",
+    xrp: "#1ba7d7",
+    solana: "#0c0d13",
+    tron: "#a9142b",
+    dogecoin: "#b9a442",
+    cardano: "#236bdc",
+    litecoin: "#d8dae0",
+    polygon: "#8247e5",
+    dai: "#f0a826",
+    chainlink: "#2f67f6",
+    arbitrum: "#4d8dff",
+    optimism: "#ff4b5c",
+    avalanche: "#e84142",
+    fantom: "#1969ff",
+    stellar: "#f0f2f6",
+    zcash: "#f4c431",
+    toncoin: "#2fb6e8",
+    uniswap: "#ff5aad",
+    aave: "#8f72ea",
+    "the-graph": "#795bff",
+    render: "#ff4b4b",
+    "paypal-usd": "#2d7ff9",
+    "euro-coin": "#2474ff",
+  };
+  const bg = backgroundById[id] || token.color || "#8f83ff";
+  if (id === "ethereum" || symbol === "ETH") {
+    return exactHexSvg(token, `<path d="M32 11 19.8 32 32 25.7 44.2 32Z" fill="#f5f6ff"/><path d="M19.8 35.1 32 52.3l12.2-17.2L32 42.3Z" fill="#c7ccdf"/><path d="M32 11v14.7L44.2 32Zm0 31.3v10l12.2-17.2Z" fill="#8f97bd"/>`, bg);
+  }
+  if (id === "tether" || symbol === "USDT") {
+    return exactHexSvg(token, `<g class="brand-tether-mark">
+      <path d="M17.2 17.8h29.6v6.7H35.5v6.2c7.9.5 13.7 2.8 13.7 5.5 0 3.1-7.7 5.8-17.2 5.8s-17.2-2.7-17.2-5.8c0-2.7 5.8-5 13.7-5.5v-6.2H17.2Z" fill="#fff"/>
+      <ellipse cx="32" cy="36.2" rx="13.2" ry="3.6" fill="none" stroke="#35c4b6" stroke-width="2.2"/>
+      <path d="M28.5 33.4c1.1-.1 2.3-.2 3.5-.2s2.4.1 3.5.2v14.7h-7Z" fill="#fff"/>
+      <ellipse cx="32" cy="36.2" rx="16.9" ry="5.3" fill="none" stroke="#fff" stroke-width="3.4"/>
+    </g>`, bg);
+  }
+  if (id === "bitcoin" || symbol === "BTC" || id === "wrapped-bitcoin") {
+    return exactHexSvg(token, exactTextMark("₿", 34, 43), bg);
+  }
+  if (id === "bnb" || symbol === "BNB") {
+    return exactHexSvg(token, `<path d="m32 16 7.1 7.1L32 30.2l-7.1-7.1Zm-11 11 7.1 7.1-7.1 7.1-7.1-7.1Zm22 0 7.1 7.1-7.1 7.1-7.1-7.1Zm-11 11 7.1 7.1L32 52.2l-7.1-7.1Zm0-11 7.1 7.1L32 41.2l-7.1-7.1Z" fill="#fff"/>`, bg);
+  }
+  if (id === "usd-coin" || symbol === "USDC") {
+    return exactHexSvg(token, `<circle cx="32" cy="32" r="15.6" fill="none" stroke="#fff" stroke-width="4"/><path d="M32 18v28M38.5 24.8c-2.1-1.5-4.2-2.2-6.5-2.2-4 0-6.5 1.9-6.5 4.7 0 6.5 13.1 3.1 13.1 9.9 0 2.9-2.4 4.8-6.6 4.8-2.9 0-5.3-.8-7.2-2.4" fill="none" stroke="#fff" stroke-width="3.5" stroke-linecap="round"/>`, bg);
+  }
+  if (id === "xrp" || symbol === "XRP") {
+    return exactHexSvg(token, `<path d="M20.5 22.2c4.3 4.4 7.4 6.4 11.5 6.4s7.2-2 11.5-6.4M20.5 41.8c4.3-4.4 7.4-6.4 11.5-6.4s7.2 2 11.5 6.4" fill="none" stroke="#fff" stroke-width="4.2" stroke-linecap="round"/>`, bg);
+  }
+  if (id === "solana" || symbol === "SOL") {
+    return exactHexSvg(token, `<path d="M21 18.5h27l-5.2 6H15.8Z" fill="#24e0a6"/><path d="M15.8 29h27L48 35H21Z" fill="#875cff"/><path d="M21 39.5h27l-5.2 6H15.8Z" fill="#26c8ff"/>`, bg);
+  }
+  if (id === "tron" || symbol === "TRX") {
+    return exactHexSvg(token, `<path d="m19.2 18.5 29.1 8.1-16.1 21.6Zm3.9 4.2 8.9 19.5 4.4-13.4Zm3.4-1.2 12.2 6 5.8-1.2Zm12.8 8.1-5.2 10.4 9.7-12.1Z" fill="none" stroke="#fff" stroke-width="2.3" stroke-linejoin="round"/>`, bg);
+  }
+  if (id === "dogecoin" || symbol === "DOGE") {
+    return exactHexSvg(token, exactTextMark("Ð", 33, 43), bg);
+  }
+  if (id === "cardano" || symbol === "ADA") {
+    return exactHexSvg(token, `<g fill="#fff">${[0, 60, 120, 180, 240, 300].map((angle) => {
+      const x = 32 + (Math.cos((angle * Math.PI) / 180) * 12);
+      const y = 32 + (Math.sin((angle * Math.PI) / 180) * 12);
+      return `<circle cx="${x.toFixed(1)}" cy="${y.toFixed(1)}" r="2.4"/>`;
+    }).join("")}<circle cx="32" cy="32" r="3.2"/><circle cx="32" cy="14.5" r="1.8"/><circle cx="32" cy="49.5" r="1.8"/><circle cx="14.5" cy="32" r="1.8"/><circle cx="49.5" cy="32" r="1.8"/></g>`, bg);
+  }
+  if (id === "litecoin" || symbol === "LTC") {
+    return exactHexSvg(token, `<path d="M27.5 16.5h8.1l-4 16.5 7.8-2-1.5 5.8-7.9 2-1.8 7.6h18.2l-1.7 6.9H17.2l3-12.1-6 1.6 1.5-5.9 6-1.6Z" fill="#fff"/>`, bg);
+  }
+  if (id === "polygon" || symbol === "POL") {
+    return exactHexSvg(token, `<g class="brand-polygon-mark" fill="none" stroke="#fff" stroke-width="4.4" stroke-linecap="round" stroke-linejoin="round">
+      <path d="M22.2 25.6 14.9 29.8v8.4l7.3 4.2 7.3-4.2v-8.4Z"/>
+      <path d="M41.8 21.2 49.1 25.4v8.4L41.8 38l-7.3-4.2v-8.4Z"/>
+      <path d="M29.5 29.8 34.5 26.9M29.5 38.2l5-2.9"/>
+    </g>`, bg);
+  }
+  if (id === "dai" || symbol === "DAI") {
+    return exactHexSvg(token, `<path d="M18 23h14.8c7.2 0 12.2 3.7 13.5 9h4.1v4.6h-4.1c-1.3 5.4-6.3 9-13.5 9H18v-9h-4.2V32H18Zm6.3 4.7V32h15.1c-1.1-2.7-3.8-4.3-7.2-4.3Zm0 8.9v4.3h7.9c3.4 0 6.1-1.6 7.2-4.3Z" fill="#fff"/>`, bg);
+  }
+  if (id === "chainlink" || symbol === "LINK") {
+    return exactHexSvg(token, `<path class="brand-chainlink-mark" d="M32 16.4 45.6 24.2v15.6L32 47.6l-13.6-7.8V24.2Z" fill="none" stroke="#fff" stroke-width="5.8" stroke-linejoin="round"/>`, bg);
+  }
+  if (id === "arbitrum" || symbol === "ARB") {
+    return exactHexSvg(token, `<path d="M20 44 31.5 16h7.2L27.2 44Zm12.6 0 7.8-18.6 4.5 10.1L41.5 44Z" fill="#fff"/><path d="M17.5 23.5 32 15l14.5 8.5v17L32 49l-14.5-8.5Z" fill="none" stroke="#d7e6ff" stroke-width="2.2"/>`, bg);
+  }
+  if (id === "optimism" || symbol === "OP") {
+    return exactHexSvg(token, exactTextMark("OP", 23, 40), bg);
+  }
+  if (id === "avalanche" || symbol === "AVAX") {
+    return exactHexSvg(token, `<path d="M33.9 16.8 46.5 40c1 1.8-.3 4-2.4 4H36l-4.1-7.1-4.2 7.1h-7.9c-2.1 0-3.4-2.2-2.4-4l12.6-23.2c.9-1.7 3.1-1.7 3.9 0Z" fill="#fff"/>`, bg);
+  }
+  if (id === "fantom" || symbol === "FTM") {
+    return exactHexSvg(token, `<path d="M21 21 32 15l11 6v22l-11 6-11-6Zm6 3.5v8l5 2.8 5-2.8v-8l-5-2.8Zm0 15 5 2.8 5-2.8v-4.4l-5 2.8-5-2.8Z" fill="none" stroke="#fff" stroke-width="3.2" stroke-linejoin="round"/>`, bg);
+  }
+  if (id === "stellar" || symbol === "XLM") {
+    return exactHexSvg(token, `<g class="brand-stellar-mark" transform="rotate(-19 32 32)" fill="none" stroke="#111827" stroke-linecap="round" stroke-linejoin="round">
+      <circle cx="32" cy="32" r="14.4" stroke-width="3.4"/>
+      <path d="M15.3 33.8h33.4" stroke-width="4.3"/>
+      <path d="M15.3 41h33.4" stroke-width="4.3"/>
+    </g>`, bg);
+  }
+  if (id === "zcash" || symbol === "ZEC") {
+    return exactHexSvg(token, `<circle cx="32" cy="32" r="15" fill="none" stroke="#fff" stroke-width="3.8"/><path d="M32 15v8M32 41v8M24 24h16L24 40h16" fill="none" stroke="#fff" stroke-width="3.8" stroke-linecap="round" stroke-linejoin="round"/>`, bg);
+  }
+  if (id === "toncoin" || symbol === "TON") {
+    return exactHexSvg(token, `<path d="M17 21h30L32 47Zm5.6 4 9.4 16.8L41.4 25Z" fill="none" stroke="#fff" stroke-width="3.5" stroke-linejoin="round"/>`, bg);
+  }
+  if (id === "uniswap" || symbol === "UNI") {
+    return exactHexSvg(token, `<path class="brand-uniswap-mark" d="M40.4 14.8c-4.7 2.1-7.2 5.5-7.3 10.4-4.4-2.9-9.1-4-14.1-3.3 5.9 2.7 9.4 6.5 10.4 11.5-3.8 1-6.7 3.2-8.5 6.6 4.2-1.6 8.2-1.5 11.8.5 4.4 2.3 7.5 5.3 9.3 9.1 1-4.1.4-7.8-1.9-10.9 3.7.6 6.8 2.2 9.4 4.9-.8-5.5-3.2-9.5-7.3-11.8 3.4-4.4 2.8-10.1-1.8-17Z" fill="#fff"/>
+      <path d="M39.4 14.5 45 17.2l-4.3 3.4Z" fill="#fff"/>
+      <circle cx="36.9" cy="30.4" r="1.7" fill="${bg}"/>`, bg);
+  }
+  if (id === "aave" || symbol === "AAVE") {
+    return exactHexSvg(token, `<path class="brand-aave-ghost" d="M32 15.6c-8.4 0-14.6 6.4-14.6 15v13.2c0 2 2.2 3.2 3.9 2.1l3-1.9 3 1.9c1.3.8 2.9.8 4.2 0l.5-.3.5.3c1.3.8 2.9.8 4.2 0l3-1.9 3 1.9c1.7 1.1 3.9-.1 3.9-2.1V30.6c0-8.6-6.2-15-14.6-15Z" fill="#fff"/>
+      <circle cx="26.5" cy="31.5" r="2.25" fill="${bg}"/>
+      <circle cx="37.5" cy="31.5" r="2.25" fill="${bg}"/>
+      <path d="M27.6 38.4c2.7 2 6.1 2 8.8 0" fill="none" stroke="${bg}" stroke-width="2.4" stroke-linecap="round"/>`, bg);
+  }
+  if (id === "xocash" || lowerSymbol === "xo") {
+    return exactHexSvg(token, `<text x="29" y="40" text-anchor="middle" font-size="21" font-weight="900" fill="#fff" font-family="Inter, Arial, sans-serif">XO</text><circle cx="45" cy="22" r="8" fill="#111"/><path d="M40 22h10M42 19h6M42 25h6" stroke="#fff" stroke-width="1.8" stroke-linecap="round"/>`, "#19d64a");
+  }
+  if (id === "pepe" || id === "shiba-inu") {
+    return exactHexSvg(token, exactTextMark(symbol.slice(0, 4), String(symbol).length > 3 ? 17 : 22, 39), bg);
+  }
+  const short = String(symbol).slice(0, 4);
+  return exactHexSvg(token, exactTextMark(short, short.length > 3 ? 16 : 22, 39), bg);
+}
+
+function exactIcon(token, className = "") {
+  if (token.id === "tether" || token.symbol === "USDT") {
+    const svg = exactLogoSvg(token);
+    return `<span class="exact-token-icon has-vector ${className}" style="--coin:${token.color}">${svg}</span>`;
+  }
+  const src = exactAssets[token.assetKey || token.id];
+  if (src) {
+    return `<span class="exact-token-icon has-image ${className}" style="--coin:${token.color}"><img src="${src}" alt="" /></span>`;
+  }
+  const svg = exactLogoSvg(token);
+  if (svg) {
+    return `<span class="exact-token-icon has-vector ${className}" style="--coin:${token.color}">${svg}</span>`;
+  }
+  return `<span class="exact-token-icon ${className}" style="--coin:${token.color}">${token.icon}</span>`;
+}
+
+function exactDeviceClass() {
+  return `exact-${exactState.device}`;
+}
+
+function exactScale(phoneWidth = 649) {
+  const width = window.innerWidth || 430;
+  const targetWidth = Math.min(Math.max(width - 32, 320), 410);
+  return Math.min(targetWidth / phoneWidth, 1);
+}
+
+function exactImage(name, className = "") {
+  return exactAssets[name] ? `<img class="${className}" src="${exactAssets[name]}" alt="" />` : "";
+}
+
+function exactQrTextBytes(text) {
+  return Array.from(unescape(encodeURIComponent(text)), (char) => char.charCodeAt(0));
+}
+
+function exactQrGeneratorPoly(degree) {
+  const exp = [1];
+  const log = Array(256).fill(0);
+  for (let index = 1; index < 255; index += 1) {
+    let value = exp[index - 1] << 1;
+    if (value & 0x100) value ^= 0x11d;
+    exp[index] = value;
+  }
+  for (let index = 0; index < 255; index += 1) log[exp[index]] = index;
+  const multiply = (a, b) => (a && b ? exp[(log[a] + log[b]) % 255] : 0);
+  let poly = [1];
+  for (let index = 0; index < degree; index += 1) {
+    const next = Array(poly.length + 1).fill(0);
+    poly.forEach((coef, coefIndex) => {
+      next[coefIndex] ^= multiply(coef, exp[index]);
+      next[coefIndex + 1] ^= coef;
+    });
+    poly = next;
+  }
+  return { poly, multiply };
+}
+
+function exactQrCodewords(text) {
+  const bytes = exactQrTextBytes(text).slice(0, 72);
+  const bits = [];
+  const append = (value, length) => {
+    for (let bit = length - 1; bit >= 0; bit -= 1) bits.push((value >> bit) & 1);
+  };
+  append(0b0100, 4);
+  append(bytes.length, 8);
+  bytes.forEach((byte) => append(byte, 8));
+  const dataCapacityBits = 80 * 8;
+  append(0, Math.min(4, dataCapacityBits - bits.length));
+  while (bits.length % 8) bits.push(0);
+  const data = [];
+  for (let index = 0; index < bits.length; index += 8) {
+    data.push(bits.slice(index, index + 8).reduce((value, bit) => (value << 1) | bit, 0));
+  }
+  for (let pad = 0; data.length < 80; pad += 1) data.push(pad % 2 ? 0x11 : 0xec);
+  const { poly, multiply } = exactQrGeneratorPoly(20);
+  const ecc = Array(20).fill(0);
+  data.forEach((codeword) => {
+    const factor = codeword ^ ecc.shift();
+    ecc.push(0);
+    poly.slice(0, 20).forEach((coef, index) => {
+      ecc[index] ^= multiply(coef, factor);
+    });
+  });
+  return [...data, ...ecc];
+}
+
+function exactQrFormatBits(mask = 0) {
+  let data = ((1 << 3) | mask) << 10;
+  const generator = 0x537;
+  for (let bit = 14; bit >= 10; bit -= 1) {
+    if ((data >> bit) & 1) data ^= generator << (bit - 10);
+  }
+  return ((((1 << 3) | mask) << 10) | data) ^ 0x5412;
+}
+
+function exactQrMatrix(text) {
+  const version = 4;
+  const size = 17 + (version * 4);
+  const matrix = Array.from({ length: size }, () => Array(size).fill(false));
+  const reserved = Array.from({ length: size }, () => Array(size).fill(false));
+  const set = (row, col, value, reserve = true) => {
+    if (row < 0 || col < 0 || row >= size || col >= size) return;
+    matrix[row][col] = Boolean(value);
+    if (reserve) reserved[row][col] = true;
+  };
+  const finder = (row, col) => {
+    for (let y = -1; y <= 7; y += 1) {
+      for (let x = -1; x <= 7; x += 1) {
+        const rr = row + y;
+        const cc = col + x;
+        if (rr < 0 || cc < 0 || rr >= size || cc >= size) continue;
+        const dark = y >= 0 && y <= 6 && x >= 0 && x <= 6 && (y === 0 || y === 6 || x === 0 || x === 6 || (y >= 2 && y <= 4 && x >= 2 && x <= 4));
+        set(rr, cc, dark);
+      }
+    }
+  };
+  finder(0, 0);
+  finder(0, size - 7);
+  finder(size - 7, 0);
+  for (let index = 8; index < size - 8; index += 1) {
+    set(6, index, index % 2 === 0);
+    set(index, 6, index % 2 === 0);
+  }
+  for (let y = -2; y <= 2; y += 1) {
+    for (let x = -2; x <= 2; x += 1) {
+      const distance = Math.max(Math.abs(x), Math.abs(y));
+      set(26 + y, 26 + x, distance !== 1);
+    }
+  }
+  set((4 * version) + 9, 8, true);
+  for (let index = 0; index < 9; index += 1) {
+    if (index !== 6) {
+      reserved[8][index] = true;
+      reserved[index][8] = true;
+    }
+  }
+  for (let index = 0; index < 8; index += 1) {
+    reserved[size - 1 - index][8] = true;
+    reserved[8][size - 1 - index] = true;
+  }
+  const bits = exactQrCodewords(text).flatMap((codeword) => Array.from({ length: 8 }, (_, index) => (codeword >> (7 - index)) & 1));
+  let bitIndex = 0;
+  let upward = true;
+  for (let col = size - 1; col > 0; col -= 2) {
+    if (col === 6) col -= 1;
+    for (let offset = 0; offset < size; offset += 1) {
+      const row = upward ? size - 1 - offset : offset;
+      for (let x = 0; x < 2; x += 1) {
+        const cc = col - x;
+        if (reserved[row][cc]) continue;
+        const mask = (row + cc) % 2 === 0;
+        set(row, cc, Boolean((bits[bitIndex] || 0) ^ mask), false);
+        bitIndex += 1;
+      }
+    }
+    upward = !upward;
+  }
+  const format = exactQrFormatBits(0);
+  const fbit = (index) => ((format >> index) & 1) === 1;
+  for (let index = 0; index <= 5; index += 1) set(8, index, fbit(index));
+  set(8, 7, fbit(6));
+  set(8, 8, fbit(7));
+  set(7, 8, fbit(8));
+  for (let index = 9; index < 15; index += 1) set(14 - index, 8, fbit(index));
+  for (let index = 0; index < 8; index += 1) set(size - 1 - index, 8, fbit(index));
+  for (let index = 8; index < 15; index += 1) set(8, size - 15 + index, fbit(index));
+  return matrix;
+}
+
+function exactQrSvg(text) {
+  const matrix = exactQrMatrix(text);
+  const size = matrix.length;
+  const cells = matrix.flatMap((row, y) => row.map((dark, x) => dark ? `<rect x="${x}" y="${y}" width="1" height="1"/>` : "")).join("");
+  return `<svg class="real-qr-svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges" aria-label="QR code for ${text}"><rect width="${size}" height="${size}" fill="#fff"/> <g fill="#050505">${cells}</g></svg>`;
+}
+
+function exactMoneyNumber(value) {
+  const number = Number(String(value || "0").replace(/[$,]/g, ""));
+  return Number.isFinite(number) ? number : 0;
+}
+
+function exactShortHash(hash) {
+  return hash ? `${hash.slice(0, 7)}...${hash.slice(-5)}` : "-";
+}
+
+function exactFormatUsd(value) {
+  return `$${Number(value || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+}
+
+function exactPortfolioValue() {
+  return exactTokens
+    .filter((token) => exactTokenEnabled(token))
+    .reduce((total, token) => total + exactComputedTokenValue(token), 0);
+}
+
+function exactHoldingsSortLabel() {
+  return exactState.holdingsSort === "lowest" ? "LOWEST HOLDINGS" : "HIGHEST HOLDINGS";
+}
+
+function exactSortedEnabledTokens() {
+  const direction = exactState.holdingsSort === "lowest" ? 1 : -1;
+  return exactTokens
+    .filter((token) => exactTokenEnabled(token))
+    .sort((a, b) => {
+      const valueDelta = exactComputedTokenValue(a) - exactComputedTokenValue(b);
+      if (valueDelta) return valueDelta * direction;
+      return a.name.localeCompare(b.name);
+    });
+}
+
+function exactMoneyParts(value) {
+  const [whole, cents = "00"] = exactFormatUsd(value).split(".");
+  return { whole, cents };
+}
+
+function exactTokenBalance(token) {
+  if (!exactTokenEnabled(token)) return "0";
+  if (exactPortfolioHoldings[token.id]) return exactPortfolioHoldings[token.id].amount;
+  if (token.id === "tether") return "0";
+  if (token.id === "usd-coin") return "0";
+  if (token.id === "dai") return "0";
+  if (token.id === "wrapped-bitcoin") return "0";
+  if (token.id === "chainlink") return "0";
+  if (token.id === "solana") return "5.42";
+  if (token.id === "tron") return "2,000";
+  if (token.id === "dogecoin") return "1,000";
+  if (token.id === "cardano") return "600";
+  if (token.id === "litecoin") return "1.25";
+  if (token.id === "xocash") return "320";
+  if (token.id === "polygon") return "0";
+  if (token.id === "arbitrum") return "0";
+  if (token.id === "optimism") return "0";
+  return "0";
+}
+
+function exactTokenValue(token) {
+  return exactFormatUsd(exactComputedTokenValue(token));
+}
+
+function exactComputedTokenValue(token) {
+  if (!exactTokenEnabled(token)) return 0;
+  if (exactPortfolioHoldings[token.id]) return exactPortfolioHoldings[token.id].value;
+  const balance = Number(String(exactTokenBalance(token)).replace(/,/g, ""));
+  if (!Number.isFinite(balance) || balance <= 0) return 0;
+  return balance * exactMoneyNumber(token.price);
+}
+
+function exactTokenTransactions(tokenId = exactState.selected) {
+  return exactState.transactions.filter((transaction) => transaction.token === tokenId);
+}
+
+function exactStatusLabel(status) {
+  if (status === "pending") return "Pending";
+  if (status === "received") return "Received";
+  if (status === "sent") return "Sent";
+  return "Sent";
+}
+
+function exactScreenTitle() {
+  return exactState.device === "android" ? "Android" : "iPhone";
+}
+
+function exactToast() {
+  return exactState.toast ? `<div class="real-toast">${exactState.toast}</div>` : "";
+}
+
+function exactGoBack() {
+  const fallback = {
+    access: "landing",
+    create: "access",
+    confirm: "create",
+    restore: "access",
+    password: exactState.onboardingMode === "restore" ? "restore" : "confirm",
+    detail: "home",
+    send: "detail",
+    receive: "detail",
+    assets: "home",
+    "add-token": exactState.returnToScreen || "home",
+    profile: "home",
+    settings: "profile",
+  };
+  exactState.screen = fallback[exactState.screen] || "home";
+  exactState.showHoldingsSort = false;
+}
+
+function realTopBar({ title = "", back = "home", right = "" } = {}) {
+  return `
+    <header class="real-topbar">
+      <button data-action="${back === "home" ? "back" : back}" aria-label="Back">‹</button>
+      ${title ? `<strong>${title}</strong>` : "<span></span>"}
+      ${right || "<span></span>"}
+    </header>
+  `;
+}
+
+function realAssetRow(token, options = {}) {
+  const enabled = exactTokenEnabled(token);
+  return `
+    <button class="real-asset-row ${options.compact ? "compact" : ""}" data-action="${options.action || "detail"}" data-token="${token.id}">
+      ${exactIcon(token)}
+      <span class="real-asset-copy">
+        <strong>${token.name}</strong>
+        <small>${token.price} ${token.change}</small>
+      </span>
+      <em style="color:${token.color}">${options.showToggle ? (enabled ? "✓" : "○") : token.symbol}</em>
+    </button>
+  `;
+}
+
+function realHoldingRow(token) {
+  return `
+    <button class="real-holding-row" data-action="detail" data-token="${token.id}">
+      ${exactIcon(token)}
+      <span class="real-holding-name">
+        <strong>${token.symbol}</strong>
+        <small>${token.name}</small>
+      </span>
+      <span class="real-holding-value">
+        <strong style="color:${token.color}">${exactTokenBalance(token)} ${token.symbol}</strong>
+        <small>${exactTokenValue(token)}</small>
+      </span>
+    </button>
+  `;
+}
+
+function realActionDock(token) {
+  return `
+    <nav class="real-action-dock">
+      <button data-action="send" aria-label="Send ${token.symbol}"><strong>↗</strong><span>Send</span></button>
+      <button data-action="open-access" aria-label="Swap ${token.symbol}"><strong>⇄</strong><span>Swap</span></button>
+      <button data-action="open-access" aria-label="Buy or sell ${token.symbol}"><strong>$</strong><span>Buy / Sell</span></button>
+      <button data-action="receive" aria-label="Receive ${token.symbol}"><strong>↙</strong><span>Receive</span></button>
+    </nav>
+  `;
+}
+
+const exactRangeProfiles = {
+  LIVE: { length: 28, amp: 3.4, drift: 1.2, wave: 0.9, phase: 0 },
+  "1D": { length: 28, amp: 5.6, drift: -2.5, wave: 0.72, phase: 2.3 },
+  "7D": { length: 24, amp: 8.8, drift: 4.8, wave: 0.62, phase: 3.7 },
+  "1M": { length: 22, amp: 10.2, drift: -7.4, wave: 0.55, phase: 5.1 },
+  "3M": { length: 26, amp: 13.4, drift: 9.8, wave: 0.48, phase: 6.2 },
+  "6M": { length: 30, amp: 16.6, drift: 13.2, wave: 0.4, phase: 8.9 },
+  "1Y": { length: 34, amp: 20.8, drift: 22.4, wave: 0.34, phase: 11.4 },
+};
+
+function exactTokenSeed(token) {
+  return [...token.id].reduce((total, char) => total + char.charCodeAt(0), 0) % 17;
+}
+
+function exactInterpolatedPoint(points, progress) {
+  const sourceIndex = progress * (points.length - 1);
+  const low = Math.floor(sourceIndex);
+  const high = Math.min(points.length - 1, low + 1);
+  const mix = sourceIndex - low;
+  return points[low] + ((points[high] - points[low]) * mix);
+}
+
+function exactRangePoints(token) {
+  const base = token.chart?.length ? token.chart : exactTokens[1].chart;
+  const profile = exactRangeProfiles[exactState.activeRange] || exactRangeProfiles.LIVE;
+  const seed = exactTokenSeed(token);
+  return Array.from({ length: profile.length }, (_, index) => {
+    const progress = profile.length === 1 ? 0 : index / (profile.length - 1);
+    const basePoint = exactInterpolatedPoint(base, progress);
+    const primaryWave = Math.sin((index + profile.phase + seed) * profile.wave) * profile.amp;
+    const secondaryWave = Math.cos((index * 0.47) + seed) * profile.amp * 0.44;
+    const drift = (progress - 0.5) * profile.drift;
+    return Math.max(1, basePoint + primaryWave + secondaryWave + drift);
+  });
+}
+
+function exactRangeChange(token) {
+  const baseChange = Number.parseFloat(String(token.detailChange || token.change || "0").replace(/[+%]/g, ""));
+  if (!Number.isFinite(baseChange) || Math.abs(baseChange) < 0.05) return "+0.0%";
+  const multipliers = { LIVE: 1, "1D": 1.4, "7D": 2.1, "1M": 3.4, "3M": 4.8, "6M": 6.5, "1Y": 8.2 };
+  const value = baseChange * (multipliers[exactState.activeRange] || 1);
+  return `${value >= 0 ? "+" : ""}${value.toFixed(Math.abs(value) < 1 ? 1 : 2)}%`;
+}
+
+function exactChartPoints(points, width = 649, height = 318) {
+  const min = Math.min(...points);
+  const max = Math.max(...points);
+  const range = Math.max(max - min, 1);
+  return points.map((point, index) => ({
+    x: (index / (points.length - 1)) * width,
+    y: height - ((point - min) / range) * 228 - 46,
+  }));
+}
+
+function exactChartPath(points, width = 649, height = 318) {
+  const coords = exactChartPoints(points, width, height);
+  if (coords.length < 2) return "";
+  let path = `M${coords[0].x.toFixed(1)} ${coords[0].y.toFixed(1)}`;
+  for (let index = 1; index < coords.length - 1; index += 1) {
+    const current = coords[index];
+    const next = coords[index + 1];
+    const midX = (current.x + next.x) / 2;
+    const midY = (current.y + next.y) / 2;
+    path += ` Q${current.x.toFixed(1)} ${current.y.toFixed(1)} ${midX.toFixed(1)} ${midY.toFixed(1)}`;
+  }
+  const last = coords[coords.length - 1];
+  return `${path} T${last.x.toFixed(1)} ${last.y.toFixed(1)}`;
+}
+
+function exactAreaPath(points) {
+  return `${exactChartPath(points)} L649 318 L0 318 Z`;
+}
+
+function exactChartLowLabel(token, points) {
+  if (exactState.activeRange === "LIVE") {
+    if (token.id === "bitcoin") return "$59,287.84";
+    if (token.id === "ethereum") return "$1,555.67";
+    if (token.id === "tether") return "$0.9967";
+  }
+  const price = exactMoneyNumber(token.detailPrice || token.price);
+  const min = Math.min(...(points || exactRangePoints(token)));
+  const max = Math.max(...(points || exactRangePoints(token)));
+  const spread = Math.max(max - min, 1);
+  return exactFormatUsd(Math.max(price * (1 - ((spread / 100) * 0.012)), 0));
+}
+
+function exactActivityLabel(tx) {
+  if (tx.status === "pending") return "Pending";
+  return tx.direction === "incoming" ? "Received" : "Sent";
+}
+
+function exactActivityVisual(tx) {
+  if (tx.status === "pending") {
+    return {
+      label: "Pending",
+      tone: "pending",
+      icon: tx.direction === "incoming" ? "receive" : "send",
+    };
+  }
+  if (tx.direction === "incoming") return { label: "Received", tone: "received", icon: "receive" };
+  return { label: "Sent", tone: "sent", icon: "send" };
+}
+
+function exactTransferArrow(kind) {
+  const path = kind === "receive"
+    ? "M33 15 16 32M16 32h13M16 32V19"
+    : "M15 33 32 16M32 16H19M32 16v13";
+  return `
+    <svg viewBox="0 0 48 48" aria-hidden="true">
+      <path d="${path}" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"></path>
+    </svg>
+  `;
+}
+
+function exactActivityGroups(transactions) {
+  return transactions.reduce((groups, tx) => {
+    const day = tx.day || (tx.status?.startsWith("pending") ? "Pending" : "Today");
+    if (!groups.find((group) => group.day === day)) groups.push({ day, items: [] });
+    groups.find((group) => group.day === day).items.push(tx);
+    return groups;
+  }, []);
+}
+
+function renderRealLanding() {
+  const slides = [
+    { badge: "◉ Wallet", title: "Move Crypto", tone: "wallet" },
+    { badge: "⌁ Markets", title: "Move Stocks", tone: "markets" },
+    { badge: "$ Pay", title: "Move Cash", tone: "pay" },
+  ];
+  const slide = slides[exactState.landingSlide] || slides[0];
+  return `
+    <main class="real-phone real-landing ${slide.tone} exact-${exactState.device}">
+      <section class="real-landing-visual">
+        <button class="real-slide-zone left" data-action="landing-prev" aria-label="Previous"></button>
+        <button class="real-slide-zone right" data-action="landing-next" aria-label="Next"></button>
+        <div class="real-exodus-mark">⟠</div>
+        <span class="real-badge">${slide.badge}</span>
+        <h1>${slide.title}</h1>
+        <p>Simple. Powerful. Yours.</p>
+      </section>
+      <section class="real-landing-bottom">
+        <p>Tap "Agree and continue" to accept our<br><strong>Terms of Service</strong> and <strong>Privacy Policy</strong>.</p>
+        <button class="real-white-button" data-action="agree">Agree and continue</button>
+      </section>
+      <div class="real-slide-dots">
+        ${slides.map((_, index) => `<span class="${index === exactState.landingSlide ? "active" : ""}"></span>`).join("")}
+      </div>
+      ${exactToast()}
+    </main>
+  `;
+}
+
+function renderRealAccess() {
+  return `
+    <main class="real-phone real-access exact-${exactState.device}">
+      ${realTopBar({ back: "landing", title: "Wallet Access" })}
+      <section class="real-access-hero">
+        <div class="real-logo-circle">${exactImage("profile_logo") || "⟠"}</div>
+        <h1>Exodus Wallet</h1>
+        <p>Create a wallet on this device or restore access locally.</p>
+      </section>
+      <section class="real-access-options">
+        <button data-action="access-create">
+          <strong>Create Wallet</strong>
+          <span>Generate a new phrase, confirm it, then set a password.</span>
+        </button>
+        <button data-action="access-restore">
+          <strong>Restore Wallet</strong>
+          <span>Use a local-only recovery flow. No phrase is sent to a server.</span>
+        </button>
+      </section>
+      <button class="real-secondary-wide" data-action="home">Preview wallet</button>
+      ${exactToast()}
+    </main>
+  `;
+}
+
+function renderRealCreate() {
+  return `
+    <main class="real-phone real-create exact-${exactState.device}">
+      ${realTopBar({ back: "access", title: "Secret Phrase" })}
+      <section class="real-sheet-panel">
+        <h1>Write it down</h1>
+        <p>This demo phrase is shown locally only. A production wallet would generate and encrypt this on-device.</p>
+        <ol class="real-seed-grid">
+          ${exactSeedWords.map((word, index) => `<li><span>${index + 1}</span>${word}</li>`).join("")}
+        </ol>
+        <button class="real-primary-button" data-action="seed-saved">I saved my phrase</button>
+      </section>
+      ${exactToast()}
+    </main>
+  `;
+}
+
+function renderRealConfirm() {
+  return `
+    <main class="real-phone real-create exact-${exactState.device}">
+      ${realTopBar({ back: "create", title: "Confirm Phrase" })}
+      <section class="real-sheet-panel">
+        <h1>Confirm phrase</h1>
+        <p>Choose the requested words before setting your password.</p>
+        <div class="real-confirm-grid">
+          <label>Word 3<input placeholder="harbor" /></label>
+          <label>Word 8<input placeholder="ember" /></label>
+          <label>Word 12<input placeholder="matrix" /></label>
+        </div>
+        <button class="real-primary-button" data-action="phrase-confirmed">Confirm phrase</button>
+      </section>
+      ${exactToast()}
+    </main>
+  `;
+}
+
+function renderRealRestore() {
+  return `
+    <main class="real-phone real-create exact-${exactState.device}">
+      ${realTopBar({ back: "access", title: "Restore Wallet" })}
+      <section class="real-sheet-panel">
+        <h1>Restore locally</h1>
+        <p>Only use demo words in this preview. A production version must keep the phrase on-device and encrypt before storage.</p>
+        <textarea data-access-field="restorePhrase" placeholder="word 1 word 2 word 3 ...">${exactState.restorePhrase}</textarea>
+        <button class="real-primary-button" data-action="phrase-confirmed">Continue</button>
+      </section>
+      ${exactToast()}
+    </main>
+  `;
+}
+
+function renderRealPassword() {
+  return `
+    <main class="real-phone real-create exact-${exactState.device}">
+      ${realTopBar({ back: exactState.onboardingMode === "restore" ? "restore" : "confirm", title: "Set Password" })}
+      <section class="real-sheet-panel">
+        <h1>Secure this device</h1>
+        <p>The password unlocks encrypted wallet data on this device.</p>
+        <div class="real-confirm-grid">
+          <label>Password<input type="password" placeholder="Minimum 8 characters" /></label>
+          <label>Confirm Password<input type="password" placeholder="Repeat password" /></label>
+        </div>
+        <button class="real-primary-button" data-action="password-done">Open wallet</button>
+      </section>
+      ${exactToast()}
+    </main>
+  `;
+}
+
+function renderRealHome() {
+  const enabled = exactSortedEnabledTokens();
+  const portfolio = exactMoneyParts(exactPortfolioValue());
+  return `
+    <main class="real-phone real-home exact-${exactState.device}">
+      <div class="real-scroll">
+        <header class="real-home-top">
+          <button class="real-avatar" data-action="profile">${exactImage("exodus_small") || "⟠"}</button>
+          <button class="real-search-round" data-action="assets" aria-label="Search assets">⌕</button>
+        </header>
+        <section class="real-portfolio-hero">
+          <button class="real-portfolio-ring" data-action="assets" aria-label="Wallet balance">
+            <svg viewBox="0 0 420 420" aria-hidden="true">
+              <circle class="track" cx="210" cy="210" r="174"></circle>
+              <circle class="segment yellow" cx="210" cy="210" r="174" pathLength="100"></circle>
+              <circle class="segment blue" cx="210" cy="210" r="174" pathLength="100"></circle>
+              <circle class="segment purple" cx="210" cy="210" r="174" pathLength="100"></circle>
+            </svg>
+            <span class="real-portfolio-amount">
+              <b>${portfolio.whole}</b><small>.${portfolio.cents}</small>
+            </span>
+          </button>
+          <button class="real-holdings-sort" data-action="holdings-sort">${exactHoldingsSortLabel()} <span>⌄</span></button>
+          ${exactState.showHoldingsSort ? `
+            <div class="real-holdings-menu">
+              <button class="${exactState.holdingsSort === "highest" ? "active" : ""}" data-action="set-holdings-sort" data-sort="highest">Highest value</button>
+              <button class="${exactState.holdingsSort === "lowest" ? "active" : ""}" data-action="set-holdings-sort" data-sort="lowest">Lowest value</button>
+            </div>
+          ` : ""}
+        </section>
+        <section class="real-list">
+          ${enabled.map((token) => realHoldingRow(token)).join("")}
+          <button class="real-add-more" data-action="add-token">Add More</button>
+        </section>
+      </div>
+      <nav class="real-bottom-dock">
+        <button data-action="assets">▣</button>
+        <button data-action="detail" data-token="ethereum">⇄</button>
+        <button data-action="open-access">$</button>
+      </nav>
+      ${exactToast()}
+    </main>
+  `;
+}
+
+function renderRealDetail() {
+  const token = exactToken();
+  const network = exactSelectedNetwork(token);
+  const points = exactRangePoints(token);
+  const chartPoints = exactChartPoints(points);
+  const chart = exactChartPath(points);
+  const area = exactAreaPath(points);
+  const tokenTx = exactTokenTransactions(token.id);
+  const activityGroups = exactActivityGroups(tokenTx);
+  const balance = exactTokenBalance(token);
+  const lastPoint = chartPoints[chartPoints.length - 1] || { x: 622, y: 139 };
+  return `
+    <main class="real-phone real-detail exact-${exactState.device}" style="--asset:${token.color}">
+      <div class="real-scroll with-dock">
+        <header class="real-detail-top">
+          <button data-action="back" aria-label="Back">‹</button>
+          <button data-action="assets" aria-label="More">•••</button>
+        </header>
+        <section class="real-detail-hero">
+          ${exactIcon(token, "real-large-icon")}
+          <h1>${token.detailPrice || token.price}</h1>
+          <p>${token.name} <strong>${exactRangeChange(token)}</strong></p>
+          <small class="real-detail-network">${network.label}</small>
+        </section>
+        <section class="real-chart-wrap">
+          <svg viewBox="0 0 649 318" preserveAspectRatio="none">
+            <defs>
+              <linearGradient id="realFill" x1="0" x2="0" y1="0" y2="1">
+                <stop offset="0%" stop-color="${token.color}" stop-opacity="0.28" />
+                <stop offset="100%" stop-color="${token.color}" stop-opacity="0" />
+              </linearGradient>
+              <filter id="lineGlow" x="-20%" y="-20%" width="140%" height="140%">
+                <feGaussianBlur stdDeviation="3" result="blur"></feGaussianBlur>
+                <feMerge><feMergeNode in="blur"></feMergeNode><feMergeNode in="SourceGraphic"></feMergeNode></feMerge>
+              </filter>
+            </defs>
+            <line x1="0" y1="54" x2="649" y2="54"></line>
+            <line x1="0" y1="287" x2="649" y2="287"></line>
+            <text x="27" y="48">${token.detailPrice || token.price}</text>
+            <text x="27" y="280">${exactChartLowLabel(token, points)}</text>
+            <path d="${area}" fill="url(#realFill)"></path>
+            <path d="${chart}" class="glow" fill="none" stroke="${token.color}" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"></path>
+            <path d="${chart}" fill="none" stroke="${token.color}" stroke-width="5" stroke-linecap="round" stroke-linejoin="round"></path>
+            <circle cx="${lastPoint.x.toFixed(1)}" cy="${lastPoint.y.toFixed(1)}" r="18" fill="${token.color}" opacity="0.28"></circle>
+            <circle cx="${lastPoint.x.toFixed(1)}" cy="${lastPoint.y.toFixed(1)}" r="11" fill="${token.color}"></circle>
+            <circle cx="${lastPoint.x.toFixed(1)}" cy="${lastPoint.y.toFixed(1)}" r="3.8" fill="#fff" opacity="0.9"></circle>
+          </svg>
+        </section>
+        <div class="real-ranges">
+          ${["LIVE", "1D", "7D", "1M", "3M", "6M", "1Y"].map((range) => `<button class="${exactState.activeRange === range ? "active" : ""}" data-action="range" data-range="${range}">${range === "LIVE" ? "<i></i>" : ""}${range}</button>`).join("")}
+        </div>
+        <section class="real-balance-card">
+          <span><strong>${balance}</strong><small>${token.symbol}</small></span>
+          <span><strong>${exactTokenValue(token)}</strong><small>Value</small></span>
+          ${exactNetworks(token).length > 1 ? `<button data-action="manage-token" data-token="${token.id}">Balance by Network <strong>${network.tag}</strong><em>⌄</em></button>` : ""}
+        </section>
+        <section class="real-history">
+          <h2>ACTIVITY</h2>
+          ${activityGroups.length ? activityGroups.map((group) => `
+            <div class="real-activity-group">
+              <h3>${group.day}</h3>
+              ${group.items.map((tx) => {
+                const visual = exactActivityVisual(tx);
+                return `
+                <button class="real-tx-row ${tx.direction} ${tx.status} ${visual.tone}">
+                  <span class="real-tx-icon ${visual.tone}">${exactTransferArrow(visual.icon)}</span>
+                  <strong>${visual.label}<small>${tx.time || exactShortHash(tx.hash)}</small></strong>
+                  <em>${tx.amount}<small>${tx.value}</small></em>
+                </button>
+              `;
+              }).join("")}
+            </div>
+          `).join("") : `<p>You don't have any ${token.symbol} activity yet.</p>`}
+        </section>
+      </div>
+      ${realActionDock(token)}
+      ${exactToast()}
+    </main>
+  `;
+}
+
+function renderRealSend() {
+  const token = exactToken();
+  const network = exactSelectedNetwork(token);
+  return `
+    <main class="real-phone real-send exact-${exactState.device}" style="--asset:${token.color}">
+      ${realTopBar({ back: "detail", title: "1/3", right: `<button data-action="assets">▦</button>` })}
+      <section class="real-send-amount">
+        <span>${network.tag} NETWORK</span>
+        <label>$<input data-send-field="amount" inputmode="decimal" value="${exactState.sendAmount}" autofocus /></label>
+        <p>${exactState.sendAmount || "0"} ${token.symbol} <button data-action="swap-unit">⇅</button></p>
+      </section>
+      <section class="real-send-token">
+        ${exactIcon(token)}
+        <strong>${token.name}<small>${network.label} · ${exactTokenValue(token)}</small></strong>
+        <button data-action="max-send">All</button>
+      </section>
+      <section class="real-fee-card">
+        <span>Remaining <strong>$0 / 0 ${token.symbol}</strong></span>
+        <span>Max Network Fee <strong>$0.05 / 0.000029 ${exactNetworkFeeSymbol(token)}</strong></span>
+      </section>
+      <div class="real-keypad">
+        ${["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "‹"].map((key) => `<button data-action="keypad" data-key="${key}">${key}</button>`).join("")}
+      </div>
+      <button class="real-primary-button real-send-submit" data-action="send-submit">Send</button>
+      ${exactToast()}
+    </main>
+  `;
+}
+
+function renderRealReceive() {
+  const token = exactToken();
+  const network = exactSelectedNetwork(token);
+  const address = exactReceiveAddress(token);
+  return `
+    <main class="real-phone real-receive exact-${exactState.device}" style="--asset:${token.color}">
+      <button class="real-receive-back" data-action="back" aria-label="Back">‹</button>
+      <section class="real-receive-card">
+        <button class="real-handle" data-action="back" aria-label="Back"></button>
+        <button class="real-network-pill" data-action="manage-token" data-token="${token.id}">${exactNetworkBadge(network, "tiny")} ${network.tag} NETWORK⌄</button>
+        ${exactIcon(token, "real-receive-icon")}
+        <div class="real-qr">
+          ${exactQrSvg(address)}
+        </div>
+        <h1>Your ${token.name} Address</h1>
+        <button class="real-address" data-action="copy-address"><code>${address}</code><strong>⧉</strong></button>
+        <p>Receive ${token.symbol} on the ${network.label} network.</p>
+        <button class="real-primary-button" data-action="share-address">Share</button>
+      </section>
+      ${exactToast()}
+    </main>
+  `;
+}
+
+function exactTokenSearchText(token) {
+  return [
+    token.name,
+    token.symbol,
+    token.tokenKind,
+    ...exactNetworks(token).flatMap((network) => [network.label, network.tag, network.id]),
+  ].join(" ").toLowerCase();
+}
+
+function exactTokenMatchesFilter(token) {
+  if (exactState.assetFilter === "all") return true;
+  if (exactState.assetFilter === "tokens") return token.tokenKind === "token";
+  if (exactState.assetFilter === "main") return token.tokenKind === "native" || exactTokenEnabled(token);
+  return exactNetworks(token).some((network) => network.id === exactState.assetFilter);
+}
+
+function exactAssetRows() {
+  const search = exactState.assetSearch.trim().toLowerCase();
+  return exactTokens
+    .filter((token) => exactTokenMatchesFilter(token))
+    .filter((token) => !search || exactTokenSearchText(token).includes(search));
+}
+
+function exactVisibleNetworks(token) {
+  const search = exactState.assetSearch.trim().toLowerCase();
+  const networks = exactNetworks(token);
+  const filterNetwork = !["main", "all", "tokens"].includes(exactState.assetFilter);
+  if (filterNetwork) return networks.filter((network) => network.id === exactState.assetFilter);
+  const visible = networks.filter((network) => !search || `${network.label} ${network.tag} ${network.id}`.toLowerCase().includes(search));
+  return visible.length ? visible : networks;
+}
+
+function exactToggleMark(active) {
+  return `<em class="${active ? "active" : "idle"}">${active ? "✓" : ""}</em>`;
+}
+
+function renderRealAssets({ addMode = false } = {}) {
+  const rows = exactAssetRows();
+  const returnAction = addMode ? (exactState.returnToScreen || "home") : "home";
+  const filters = exactChainFilters;
+  return `
+    <main class="real-phone real-assets ${addMode ? "real-assets-add" : ""} exact-${exactState.device}">
+      ${realTopBar({ back: returnAction, title: addMode ? "ADD ASSETS" : "ASSETS", right: addMode ? `<button data-action="${returnAction}">✓</button>` : `<button data-action="add-token">⊕</button>` })}
+      <label class="real-search"><span>⌕</span><input data-action="asset-search" value="${exactState.assetSearch}" placeholder="Search" /></label>
+      <div class="real-chip-row">
+        ${filters.map(([id, label]) => `<button class="${exactState.assetFilter === id ? "active" : ""}" data-action="asset-filter" data-filter="${id}">${label}</button>`).join("")}
+      </div>
+      <section class="real-scroll-list">
+        ${rows.length ? rows.map((token) => {
+          const networks = exactNetworks(token);
+          const visibleNetworks = exactVisibleNetworks(token);
+          const multiNetwork = networks.length > 1;
+          const selectedNetwork = exactSelectedNetwork(token);
+          const enabledCount = exactEnabledNetworks(token).length;
+          const search = exactState.assetSearch.trim().toLowerCase();
+          const networkMatch = search && networks.some((network) => `${network.label} ${network.tag} ${network.id}`.toLowerCase().includes(search));
+          const filterNetwork = !["main", "all", "tokens"].includes(exactState.assetFilter);
+          const autoExpanded = networkMatch || filterNetwork;
+          const expanded = multiNetwork && !exactState.collapsedAssets.has(token.id) && (exactState.expandedAsset === token.id || autoExpanded);
+          const firstNetwork = visibleNetworks[0] || networks[0];
+          return `
+            <div class="real-manage-card">
+              <button class="real-manage-main" data-action="${multiNetwork ? "toggle-asset" : "toggle-network"}" data-token="${token.id}" data-network="${firstNetwork.id}" ${multiNetwork ? `aria-expanded="${expanded}"` : ""}>
+                ${exactIcon(token)}
+                <span>
+                  <strong>${token.name}</strong> <small>${token.symbol}</small>
+                  ${multiNetwork ? `<b>${enabledCount} of ${networks.length} networks enabled</b>` : ""}
+                </span>
+                ${multiNetwork ? `<em class="chevron">${expanded ? "⌃" : "⌄"}</em>` : exactToggleMark(exactState.enabledNetworkKeys.has(exactNetworkKey(token.id, firstNetwork.id)))}
+              </button>
+              ${expanded ? `<div class="real-network-list">
+                ${visibleNetworks.map((network) => `
+                  <button data-action="toggle-network" data-token="${token.id}" data-network="${network.id}" class="${selectedNetwork.id === network.id ? "selected" : ""}">
+                    <span class="real-network-icon">${exactIcon(token, "mini")}${exactNetworkBadge(network, "overlay")}</span>
+                    <span>${network.label}<small>${network.tag}</small></span>
+                    ${exactToggleMark(exactState.enabledNetworkKeys.has(exactNetworkKey(token.id, network.id)))}
+                  </button>
+                `).join("")}
+              </div>` : ""}
+            </div>
+          `;
+        }).join("") : `<div class="real-empty-state"><strong>No assets found</strong><span>Try a token name, symbol, or network.</span></div>`}
+      </section>
+      ${exactToast()}
+    </main>
+  `;
+}
+
+function renderRealProfile() {
+  return `
+    <main class="real-phone real-profile exact-${exactState.device}">
+      <button class="real-profile-back" data-action="back" aria-label="Back">‹</button>
+      <div class="real-scroll">
+        <section class="real-profile-head">
+          <button class="real-logo-circle" data-action="home">${exactImage("profile_logo") || "⟠"}</button>
+          <h1>Exodus <button data-action="open-access">♢</button></h1>
+        </section>
+        <section class="real-feature-grid">
+          <button data-action="assets"><strong>${exactImage("feature_assets") || "⬡"}</strong><span>Assets</span></button>
+          <button data-action="open-access"><strong>${exactImage("feature_web3") || "◇"}</strong><span>Web3</span></button>
+          <button data-action="open-access"><strong>${exactImage("feature_nfts") || "◒"}</strong><span>NFTs</span></button>
+          <button data-action="settings"><strong>${exactImage("feature_settings") || "✣"}</strong><span>Settings</span></button>
+        </section>
+        <section class="real-profile-list">
+          <button data-action="open-access"><strong>${exactImage("exodus_pay") || "$"}</strong><span>Exodus Pay</span><em>NEW</em></button>
+          <button data-action="open-access"><strong>${exactImage("support") || "◉"}</strong><span>Support</span></button>
+        </section>
+      </div>
+      <div class="real-bottom-curve"><span></span></div>
+      ${exactToast()}
+    </main>
+  `;
+}
+
+function renderRealSettings() {
+  const rows = [
+    ["♡", "Help Improve Exodus", "›", ""],
+    ["▭", "Portfolios", "", "toggle"],
+    ["⌗", "Connect Ledger", "›", ""],
+    ["▢", "Connect Trezor", "›", ""],
+    ["◌", "Portfolio Animation", "", "toggle"],
+    ["⌕", "Review Unverified Tokens", "›", ""],
+    ["↻", "Refresh Networks", "›", ""],
+    ["▣", "Sync Devices", "›", ""],
+    ["↺", "Restore Wallet", "›", "restore"],
+    ["⌫", "Delete Wallet", "›", ""],
+  ];
+  return `
+    <main class="real-phone real-settings exact-${exactState.device}">
+      <section class="real-settings-sheet">
+        <button class="real-handle" data-action="back" aria-label="Back"></button>
+        <h1>Settings</h1>
+        <div class="real-settings-list">
+          ${rows.map(([icon, label, arrow, type]) => `
+            <button data-action="${type === "restore" ? "access-restore" : "noop"}">
+              <strong>${icon}</strong>
+              <span>${label}</span>
+              ${type === "toggle" ? "<em></em>" : `<small>${arrow}</small>`}
+            </button>
+          `).join("")}
+        </div>
+        <p>Exodus 26.6.24</p>
+      </section>
+      ${exactToast()}
+    </main>
+  `;
+}
+
+function renderRealAddToken() {
+  return renderRealAssets({ addMode: true });
+}
+
+function renderRealMobileScreens() {
+  if (exactState.screen === "landing") return renderRealLanding();
+  if (exactState.screen === "access") return renderRealAccess();
+  if (exactState.screen === "create") return renderRealCreate();
+  if (exactState.screen === "confirm") return renderRealConfirm();
+  if (exactState.screen === "restore") return renderRealRestore();
+  if (exactState.screen === "password") return renderRealPassword();
+  if (exactState.screen === "detail") return renderRealDetail();
+  if (exactState.screen === "send") return renderRealSend();
+  if (exactState.screen === "receive") return renderRealReceive();
+  if (exactState.screen === "assets") return renderRealAssets();
+  if (exactState.screen === "add-token") return renderRealAddToken();
+  if (exactState.screen === "profile") return renderRealProfile();
+  if (exactState.screen === "settings") return renderRealSettings();
+  return renderRealHome();
+}
+
+function renderExactMobileScreens() {
+  return renderRealMobileScreens();
+}
+
+function exactRender() {
+  const phoneWidth = 649;
+  const phoneHeight = 1280;
+  const scale = exactScale(phoneWidth);
+  exactRoot.innerHTML = `
+    <div class="exact-stage" style="width:${Math.round(phoneWidth * scale)}px;height:${Math.round(phoneHeight * scale)}px">
+      <div class="exact-scale" style="width:${phoneWidth}px;height:${phoneHeight}px;transform:scale(${scale})">
+        ${renderExactMobileScreens()}
+      </div>
+    </div>
+  `;
+}
+
+exactRoot.addEventListener("click", (event) => {
+  const target = event.target.closest("[data-action]");
+  if (!target) return;
+  if (target.dataset.action === "noop") return;
+  if (target.dataset.action === "asset-search") return;
+  if (target.dataset.token) exactState.selected = target.dataset.token;
+  if (target.dataset.action !== "keypad") exactState.toast = "";
+  if (!["holdings-sort", "set-holdings-sort"].includes(target.dataset.action)) {
+    exactState.showHoldingsSort = false;
+  }
+  if (target.dataset.action === "back") {
+    exactGoBack();
+    exactRender();
+    return;
+  }
+  if (target.dataset.action === "landing-prev") {
+    exactState.landingSlide = (exactState.landingSlide + 2) % 3;
+  }
+  if (target.dataset.action === "landing-next") {
+    exactState.landingSlide = (exactState.landingSlide + 1) % 3;
+  }
+  if (target.dataset.action === "agree") exactState.screen = "access";
+  if (target.dataset.action === "access") exactState.screen = "access";
+  if (target.dataset.action === "landing") exactState.screen = "landing";
+  if (target.dataset.action === "access-create") {
+    exactState.onboardingMode = "create";
+    exactState.screen = "create";
+  }
+  if (target.dataset.action === "access-restore") {
+    exactState.onboardingMode = "restore";
+    exactState.screen = "restore";
+  }
+  if (target.dataset.action === "create") exactState.screen = "create";
+  if (target.dataset.action === "confirm") exactState.screen = "confirm";
+  if (target.dataset.action === "restore") exactState.screen = "restore";
+  if (target.dataset.action === "seed-saved") exactState.screen = "confirm";
+  if (target.dataset.action === "phrase-confirmed") exactState.screen = "password";
+  if (target.dataset.action === "password-done") {
+    exactState.passwordSet = true;
+    exactState.screen = "home";
+    exactState.toast = "Wallet ready";
+  }
+  if (target.dataset.action === "open-access") {
+    exactState.toast = "This action will use the same secured wallet session.";
+  }
+  if (target.dataset.action === "holdings-sort") {
+    exactState.showHoldingsSort = !exactState.showHoldingsSort;
+  }
+  if (target.dataset.action === "set-holdings-sort") {
+    exactState.holdingsSort = target.dataset.sort === "lowest" ? "lowest" : "highest";
+    exactState.showHoldingsSort = false;
+  }
+  if (target.dataset.action === "range") exactState.activeRange = target.dataset.range;
+  if (target.dataset.action === "asset-filter") {
+    exactState.assetFilter = target.dataset.filter;
+    exactState.collapsedAssets.clear();
+  }
+  if (target.dataset.action === "manage-token") {
+    const token = exactTokens.find((item) => item.id === target.dataset.token) || exactToken();
+    exactState.selected = token.id;
+    exactState.expandedAsset = token.id;
+    exactState.assetFilter = token.tokenKind === "token" ? "tokens" : "main";
+    exactState.returnToScreen = exactState.screen;
+    exactState.screen = "add-token";
+  }
+  if (target.dataset.action === "toggle-asset") {
+    if (exactState.collapsedAssets.has(target.dataset.token)) {
+      exactState.collapsedAssets.delete(target.dataset.token);
+      exactState.expandedAsset = target.dataset.token;
+    } else if (exactState.expandedAsset === target.dataset.token) {
+      exactState.collapsedAssets.add(target.dataset.token);
+      exactState.expandedAsset = "";
+    } else {
+      exactState.collapsedAssets.delete(target.dataset.token);
+      exactState.expandedAsset = target.dataset.token;
+    }
+  }
+  if (target.dataset.action === "toggle-network") {
+    const token = exactTokens.find((item) => item.id === target.dataset.token);
+    const network = token && exactNetworks(token).find((item) => item.id === target.dataset.network);
+    const directAddMode = exactState.screen === "add-token" && (!exactState.returnToScreen || exactState.returnToScreen === "home");
+    if (token && network) {
+      if (directAddMode) exactToggleEnabledNetwork(token, network);
+      else exactToggleNetwork(token, network);
+    }
+  }
+  if (target.dataset.action === "max-send") {
+    exactState.sendAmount = exactTokenBalance(exactToken()).replace(/,/g, "");
+  }
+  if (target.dataset.action === "swap-unit") {
+    exactState.toast = "Amount display switched";
+  }
+  if (target.dataset.action === "keypad") {
+    const key = target.dataset.key;
+    if (key === "‹") exactState.sendAmount = exactState.sendAmount.slice(0, -1);
+    else if (key === "." && exactState.sendAmount.includes(".")) {
+      exactState.sendAmount = exactState.sendAmount;
+    } else {
+      exactState.sendAmount = `${exactState.sendAmount}${key}`;
+    }
+  }
+  if (target.dataset.action === "send-submit") {
+    const token = exactToken();
+    const network = exactSelectedNetwork(token);
+    const amount = exactState.sendAmount || "0";
+    const numericAmount = Number(amount);
+    if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
+      exactState.toast = "Enter an amount";
+      exactRender();
+      return;
+    }
+    exactState.transactions.unshift({
+      id: `pending-${Date.now()}`,
+      token: token.id,
+      network: network.id,
+      direction: "outgoing",
+      status: "pending",
+      amount: `-${amount} ${token.symbol}`,
+      value: "$0",
+      title: "Sent",
+      day: "Pending",
+      time: "Pending",
+      hash: `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2).padEnd(30, "0")}`,
+    });
+    exactState.sendAmount = "";
+    exactState.screen = "detail";
+    exactState.toast = "Transaction added as Pending";
+  }
+  if (target.dataset.action === "copy-address") {
+    exactState.toast = "Address copied";
+  }
+  if (target.dataset.action === "share-address") {
+    exactState.toast = "Share sheet ready";
+  }
+  if (target.dataset.action === "detail") exactState.screen = "detail";
+  if (target.dataset.action === "send") exactState.screen = "send";
+  if (target.dataset.action === "receive") exactState.screen = "receive";
+  if (target.dataset.action === "assets") {
+    exactState.returnToScreen = "";
+    exactState.screen = "assets";
+  }
+  if (target.dataset.action === "add-token") {
+    exactState.returnToScreen = "home";
+    exactState.screen = "add-token";
+  }
+  if (target.dataset.action === "profile") exactState.screen = "profile";
+  if (target.dataset.action === "settings") exactState.screen = "settings";
+  if (target.dataset.action === "home") exactState.screen = "home";
+  exactRender();
+});
+
+exactRoot.addEventListener("input", (event) => {
+  if (event.target.matches("[data-access-field='restorePhrase']")) {
+    exactState.restorePhrase = event.target.value;
+  }
+  if (event.target.matches("[data-action='asset-search']")) {
+    exactState.assetSearch = event.target.value;
+    exactState.collapsedAssets.clear();
+    exactRender();
+    const input = exactRoot.querySelector("[data-action='asset-search']");
+    input?.focus();
+    input?.setSelectionRange(exactState.assetSearch.length, exactState.assetSearch.length);
+  }
+  if (event.target.matches("[data-send-field='amount']")) {
+    exactState.sendAmount = event.target.value;
+  }
+});
+
+window.addEventListener?.("resize", exactRender);
+exactRender();
+
+window.EXX_EXACT_DEBUG = { exactState, exactTokens, exactIcon, exactRender };

@@ -1,0 +1,13 @@
+{
+  "name": "exx-wallet-control-platform",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "node --check src/app.js && node --check src/exactApp.js && node --check src/services/ankrRpc.js && node --check src/services/transactionEngine.js && node --check src/services/vault.js && node --check src/services/runtimeConfig.js && node --check src/services/firebaseStore.js && node --check src/services/walletProvider.js && node --check src/services/liveEngine.js",
+    "bundle": "node tools/bundle-preview.mjs",
+    "bundle:exact": "node tools/bundle-exact-preview.mjs",
+    "smoke": "node tests/smoke.mjs",
+    "serve": "python3 -m http.server 4173 --bind 127.0.0.1"
+  }
+}
