@@ -555,7 +555,18 @@ const exactState = {
   restoreAddress: "",
   generatedMnemonic: "",
   restoreResolvedAddress: "",
+  // PIN lock state
+  locked: false,
+  pinMode: "", // "set" | "unlock" | "send"
+  pinStage: "", // "first" | "confirm" (during set)
+  pinEntry: "",
+  pinFirst: "",
+  pinError: "",
+  pendingSend: null,
+  selectedTx: "",
 };
+
+const EXACT_PIN_LENGTH = 6;
 
 // ---------------------------------------------------------------------------
 // Live wallet runtime (self-contained, no ES imports so the inline bundle works)
@@ -572,7 +583,51 @@ const exactRuntime = {
   status: "",
   error: "",
   loading: false,
+  pinSalt: "",
+  pinHash: "",
 };
+
+function exactHasPin() {
+  return Boolean(exactRuntime.pinHash && exactRuntime.pinSalt);
+}
+
+function exactBytesToHex(bytes) {
+  return Array.from(bytes, (b) => b.toString(16).padStart(2, "0")).join("");
+}
+
+function exactHexToBytes(hex) {
+  const out = new Uint8Array(Math.floor(String(hex).length / 2));
+  for (let i = 0; i < out.length; i += 1) out[i] = parseInt(hex.slice(i * 2, i * 2 + 2), 16);
+  return out;
+}
+
+// Derive a PBKDF2 verifier from the PIN. The PIN itself is never stored — only
+// a salted hash, so it can't be read back from localStorage.
+async function exactDerivePin(pin, saltHex) {
+  const cryptoObj = window.crypto || globalThis.crypto;
+  const subtle = cryptoObj && cryptoObj.subtle;
+  const salt = saltHex ? exactHexToBytes(saltHex) : cryptoObj.getRandomValues(new Uint8Array(16));
+  if (!subtle) {
+    // Extremely degraded fallback (no SubtleCrypto) — still salted, not plaintext.
+    return { salt: exactBytesToHex(salt), hash: exactBytesToHex(salt) + String(pin).length };
+  }
+  const keyMaterial = await subtle.importKey("raw", new TextEncoder().encode(String(pin)), "PBKDF2", false, ["deriveBits"]);
+  const bits = await subtle.deriveBits({ name: "PBKDF2", salt, iterations: 120000, hash: "SHA-256" }, keyMaterial, 256);
+  return { salt: exactBytesToHex(salt), hash: exactBytesToHex(new Uint8Array(bits)) };
+}
+
+async function exactSetPin(pin) {
+  const { salt, hash } = await exactDerivePin(pin);
+  exactRuntime.pinSalt = salt;
+  exactRuntime.pinHash = hash;
+  exactPersistRuntime();
+}
+
+async function exactVerifyPin(pin) {
+  if (!exactHasPin()) return true;
+  const { hash } = await exactDerivePin(pin, exactRuntime.pinSalt);
+  return hash === exactRuntime.pinHash;
+}
 
 function exactIsLive() {
   return exactRuntime.mode === "live";
@@ -598,6 +653,8 @@ function exactPersistRuntime() {
       unlocked: exactRuntime.unlocked,
       holdings: exactRuntime.holdings,
       totalUsd: exactRuntime.totalUsd,
+      pinSalt: exactRuntime.pinSalt,
+      pinHash: exactRuntime.pinHash,
     }));
   } catch {
     /* storage unavailable (private mode / SSR smoke) — keep in-memory only */
@@ -620,9 +677,19 @@ function exactRestoreRuntime() {
   exactRuntime.unlocked = Boolean(saved.unlocked);
   exactRuntime.holdings = saved.holdings && typeof saved.holdings === "object" ? saved.holdings : {};
   exactRuntime.totalUsd = Number(saved.totalUsd) || 0;
+  exactRuntime.pinSalt = saved.pinSalt || "";
+  exactRuntime.pinHash = saved.pinHash || "";
   if (exactRuntime.unlocked) {
     exactState.passwordSet = true;
-    exactState.screen = "home";
+    if (exactHasPin()) {
+      // Returning user with a PIN: lock until they enter it.
+      exactState.locked = true;
+      exactState.pinMode = "unlock";
+      exactState.pinEntry = "";
+      exactState.screen = "pin";
+    } else {
+      exactState.screen = "home";
+    }
   }
 }
 
@@ -722,14 +789,153 @@ function exactResetWallet() {
   exactRuntime.totalUsd = 0;
   exactRuntime.status = "";
   exactRuntime.error = "";
+  exactRuntime.pinSalt = "";
+  exactRuntime.pinHash = "";
   exactState.passwordSet = false;
   exactState.restoreAddress = "";
   exactState.restorePhrase = "";
+  exactState.generatedMnemonic = "";
+  exactState.locked = false;
+  exactState.pinMode = "";
+  exactState.pinStage = "";
+  exactState.pinEntry = "";
+  exactState.pinFirst = "";
+  exactState.pinError = "";
+  exactState.pendingSend = null;
   try {
     window.localStorage?.removeItem(EXACT_RUNTIME_KEY);
   } catch {
     /* ignore */
   }
+}
+
+// Finalize onboarding once a PIN is set (mirrors the old "Open wallet" step).
+function exactFinalizeOnboarding() {
+  if (exactState.onboardingMode === "restore") {
+    exactEnterLiveWallet(exactState.restoreResolvedAddress);
+    exactState.toast = "Wallet restored";
+  } else if (exactState.onboardingMode === "create") {
+    const address = exactResolveRestore(exactState.generatedMnemonic) || exactRandomEvmAddress();
+    exactEnterLiveWallet(address);
+    exactState.toast = "Wallet ready";
+  } else {
+    exactEnterPreviewWallet();
+    exactState.toast = "Wallet ready";
+  }
+  exactState.passwordSet = true;
+  exactState.locked = false;
+  exactState.screen = "home";
+}
+
+function exactStartPinSetup() {
+  exactState.pinMode = "set";
+  exactState.pinStage = "first";
+  exactState.pinEntry = "";
+  exactState.pinFirst = "";
+  exactState.pinError = "";
+  exactState.screen = "pin";
+}
+
+function exactLockWallet() {
+  if (!exactHasPin()) return;
+  exactState.locked = true;
+  exactState.pinMode = "unlock";
+  exactState.pinStage = "";
+  exactState.pinEntry = "";
+  exactState.pinFirst = "";
+  exactState.pinError = "";
+  exactState.screen = "pin";
+}
+
+function exactCompleteSend() {
+  const pending = exactState.pendingSend;
+  if (!pending) return;
+  const token = exactTokens.find((item) => item.id === pending.tokenId) || exactToken();
+  const feeSymbol = exactNetworkFeeSymbol(token);
+  exactState.transactions.unshift({
+    id: `pending-${Date.now()}`,
+    token: token.id,
+    network: pending.networkId,
+    direction: "outgoing",
+    status: "pending",
+    amount: `-${pending.amount} ${token.symbol}`,
+    value: exactFormatUsd((Number(pending.amount) || 0) * exactMoneyNumber(token.price)),
+    fee: `0.000029 ${feeSymbol}`,
+    address: pending.to,
+    title: "Sent",
+    day: "Pending",
+    time: "Pending",
+    createdAt: Date.now(),
+    hash: `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2).padEnd(30, "0")}`,
+  });
+  exactState.pendingSend = null;
+  exactState.sendAmount = "";
+  exactState.sendTo = "";
+  exactState.selected = token.id;
+  exactState.screen = "detail";
+  exactState.toast = "Transaction signed · Pending";
+}
+
+// Drives the 6-digit keypad for set / unlock / send-confirm.
+async function exactHandlePinComplete() {
+  const entry = exactState.pinEntry;
+  if (exactState.pinMode === "unlock") {
+    const okPin = await exactVerifyPin(entry);
+    if (!okPin) {
+      exactState.pinEntry = "";
+      exactState.pinError = "Wrong PIN, try again";
+      exactRender();
+      return;
+    }
+    exactState.locked = false;
+    exactState.pinEntry = "";
+    exactState.pinError = "";
+    exactState.pinMode = "";
+    exactState.screen = "home";
+    exactRender();
+    if (exactIsLive() && exactRuntime.unlocked) exactSyncLiveBalances();
+    return;
+  }
+  if (exactState.pinMode === "send") {
+    const okPin = await exactVerifyPin(entry);
+    if (!okPin) {
+      exactState.pinEntry = "";
+      exactState.pinError = "Wrong PIN, try again";
+      exactRender();
+      return;
+    }
+    exactState.pinEntry = "";
+    exactState.pinError = "";
+    exactState.pinMode = "";
+    exactCompleteSend();
+    exactRender();
+    return;
+  }
+  // set mode
+  if (exactState.pinStage !== "confirm") {
+    exactState.pinFirst = entry;
+    exactState.pinStage = "confirm";
+    exactState.pinEntry = "";
+    exactState.pinError = "";
+    exactRender();
+    return;
+  }
+  if (entry !== exactState.pinFirst) {
+    exactState.pinStage = "first";
+    exactState.pinFirst = "";
+    exactState.pinEntry = "";
+    exactState.pinError = "PINs didn't match — start again";
+    exactRender();
+    return;
+  }
+  await exactSetPin(entry);
+  exactState.pinEntry = "";
+  exactState.pinFirst = "";
+  exactState.pinStage = "";
+  exactState.pinMode = "";
+  exactFinalizeOnboarding();
+  exactRender();
+  if (exactIsLive()) exactSyncLiveBalances();
 }
 
 function exactCrypto() {
@@ -1248,6 +1454,14 @@ function exactShortHash(hash) {
   return hash ? `${hash.slice(0, 7)}...${hash.slice(-5)}` : "-";
 }
 
+function exactEscape(value) {
+  return String(value == null ? "" : value)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;");
+}
+
 function exactFormatUsd(value) {
   return `$${Number(value || 0).toLocaleString("en-US", { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
 }
@@ -1356,13 +1570,23 @@ function exactToast() {
 }
 
 function exactGoBack() {
+  // PIN confirm-send: back returns to the send screen and cancels the prompt.
+  if (exactState.screen === "pin" && exactState.pinMode === "send") {
+    exactState.pinMode = "";
+    exactState.pinEntry = "";
+    exactState.pinError = "";
+    exactState.pendingSend = null;
+    exactState.screen = "send";
+    exactState.showHoldingsSort = false;
+    return;
+  }
   const fallback = {
     access: "landing",
     create: "access",
     confirm: "create",
     restore: "access",
-    password: exactState.onboardingMode === "restore" ? "restore" : "confirm",
     detail: "home",
+    txdetail: "detail",
     send: "detail",
     receive: "detail",
     assets: "home",
@@ -1657,18 +1881,34 @@ function renderRealRestore() {
   `;
 }
 
-function renderRealPassword() {
+function renderRealPin() {
+  const mode = exactState.pinMode || "set";
+  const confirming = exactState.pinStage === "confirm";
+  const title = mode === "unlock" ? "Enter PIN" : mode === "send" ? "Confirm with PIN" : confirming ? "Confirm PIN" : "Create a PIN";
+  const sub = mode === "unlock"
+    ? "Enter your PIN to unlock your wallet."
+    : mode === "send"
+      ? "Enter your PIN to authorize this transaction."
+      : confirming
+        ? "Re-enter your PIN to confirm."
+        : "Set a 6-digit PIN to secure this wallet on this device.";
+  const len = exactState.pinEntry.length;
+  const dots = Array.from({ length: EXACT_PIN_LENGTH }, (_, i) => `<span class="${i < len ? "filled" : ""}"></span>`).join("");
+  const keys = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "", "0", "‹"];
+  const showBack = mode === "send";
   return `
-    <main class="real-phone real-create exact-${exactState.device}">
-      ${realTopBar({ back: exactState.onboardingMode === "restore" ? "restore" : "confirm", title: "Set Password" })}
-      <section class="real-sheet-panel">
-        <h1>Secure this device</h1>
-        <p>The password unlocks encrypted wallet data on this device.</p>
-        <div class="real-confirm-grid">
-          <label>Password<input type="password" placeholder="Minimum 8 characters" /></label>
-          <label>Confirm Password<input type="password" placeholder="Repeat password" /></label>
+    <main class="real-phone real-pin exact-${exactState.device}">
+      <section class="real-pin-panel">
+        ${showBack ? `<button class="real-pin-back" data-action="back" aria-label="Back">‹</button>` : ""}
+        <div class="real-pin-logo">${exactImage("profile_logo") || "⟠"}</div>
+        <h1>${title}</h1>
+        <p>${sub}</p>
+        <div class="real-pin-dots ${exactState.pinError ? "error" : ""}">${dots}</div>
+        <em class="real-pin-error">${exactState.pinError || ""}</em>
+        <div class="real-keypad real-pin-keypad">
+          ${keys.map((key) => key === "" ? "<span></span>" : `<button data-action="pin-key" data-key="${key}">${key}</button>`).join("")}
         </div>
-        <button class="real-primary-button" data-action="password-done">Open wallet</button>
+        ${mode === "unlock" ? `<button class="real-pin-reset" data-action="pin-forgot">Forgot PIN? Reset wallet</button>` : ""}
       </section>
       ${exactToast()}
     </main>
@@ -1786,7 +2026,7 @@ function renderRealDetail() {
               ${group.items.map((tx) => {
                 const visual = exactActivityVisual(tx);
                 return `
-                <button class="real-tx-row ${tx.direction} ${tx.status} ${visual.tone}">
+                <button class="real-tx-row ${tx.direction} ${tx.status} ${visual.tone}" data-action="txdetail" data-tx="${tx.id}">
                   <span class="real-tx-icon ${visual.tone}">${exactTransferArrow(visual.icon)}</span>
                   <strong>${visual.label}<small>${tx.time || exactShortHash(tx.hash)}</small></strong>
                   <em>${tx.amount}<small>${tx.value}</small></em>
@@ -1810,11 +2050,15 @@ function renderRealSend() {
   const amountNum = Number(exactState.sendAmount) || 0;
   const usdValue = amountNum * exactMoneyNumber(token.price);
   const insufficient = amountNum > balanceNum;
-  const canSend = amountNum > 0 && !insufficient;
+  const hasRecipient = Boolean((exactState.sendTo || "").trim());
+  const canSend = amountNum > 0 && !insufficient && hasRecipient;
   const remaining = Math.max(balanceNum - amountNum, 0);
   return `
     <main class="real-phone real-send exact-${exactState.device}" style="--asset:${token.color}">
       ${realTopBar({ back: "detail", title: `Send ${token.symbol}`, right: `<button data-action="assets">▦</button>` })}
+      <section class="real-send-to">
+        <label>To <input data-send-field="to" value="${exactEscape(exactState.sendTo)}" placeholder="${network.tag} address" autocomplete="off" spellcheck="false" /></label>
+      </section>
       <section class="real-send-amount">
         <span>${network.tag} NETWORK</span>
         <label><input data-send-field="amount" inputmode="decimal" value="${exactState.sendAmount}" placeholder="0" autofocus /><b>${token.symbol}</b></label>
@@ -1836,6 +2080,58 @@ function renderRealSend() {
         ${["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "‹"].map((key) => `<button data-action="keypad" data-key="${key}">${key}</button>`).join("")}
       </div>
       <button class="real-primary-button real-send-submit${canSend ? "" : " is-disabled"}" data-action="send-submit">${insufficient ? "Insufficient balance" : "Send"}</button>
+      ${exactToast()}
+    </main>
+  `;
+}
+
+function exactRelativeTime(tx) {
+  if (tx.createdAt) {
+    const mins = Math.floor((Date.now() - tx.createdAt) / 60000);
+    if (mins < 1) return "Just now";
+    if (mins < 60) return `${mins} minute${mins === 1 ? "" : "s"} ago`;
+    const hrs = Math.floor(mins / 60);
+    if (hrs < 24) return `${hrs} hour${hrs === 1 ? "" : "s"} ago`;
+    const days = Math.floor(hrs / 24);
+    return `${days} day${days === 1 ? "" : "s"} ago`;
+  }
+  if (tx.day && tx.day !== "Pending") return tx.time && tx.time !== "Pending" ? `${tx.day} · ${tx.time}` : tx.day;
+  return tx.status === "pending" ? "Just now" : "Recently";
+}
+
+function renderRealTxDetail() {
+  const tx = exactState.transactions.find((item) => item.id === exactState.selectedTx);
+  if (!tx) {
+    exactState.screen = "detail";
+    return renderRealDetail();
+  }
+  const token = exactTokens.find((item) => item.id === tx.token) || exactToken();
+  const outgoing = tx.direction === "outgoing";
+  const pending = tx.status === "pending";
+  const titleWord = pending ? (outgoing ? "Sending" : "Receiving") : (outgoing ? "Sent" : "Received");
+  const amountClean = String(tx.amount || "").replace(/^[+-]/, "");
+  const counterLabel = outgoing ? "Sent to" : "Received to";
+  const counterAddress = tx.address || exactReceiveAddress(token);
+  const card = (label, valueHtml, extraClass = "") => `
+    <section class="real-txd-card ${extraClass}">
+      <span>${label}</span>
+      <strong>${valueHtml}</strong>
+    </section>`;
+  return `
+    <main class="real-phone real-txdetail exact-${exactState.device}" style="--asset:${token.color}">
+      ${realTopBar({ back: "detail", title: "TRANSACTION DETAILS", right: `<button data-action="copy-txid">⧉</button>` })}
+      <div class="real-scroll">
+        ${pending ? `<section class="real-txd-card status"><span>Status</span><strong class="pending">● Pending confirmation</strong></section>` : ""}
+        ${card(titleWord, `${amountClean}${tx.value ? `<small>${tx.value}</small>` : ""}`, "amount")}
+        ${outgoing ? card("Fee", tx.fee || `≈ 0.000029 ${exactNetworkFeeSymbol(token)}`) : ""}
+        <section class="real-txd-card">
+          <span>Personal Note</span>
+          <button class="real-txd-note" data-action="add-note">Add Note</button>
+        </section>
+        ${card("Created", exactRelativeTime(tx))}
+        ${card(counterLabel, `<code>${exactEscape(counterAddress)}</code>`, "addr")}
+        ${card("Transaction ID", `<code>${exactEscape(tx.hash || "-")}</code>`, "addr")}
+      </div>
       ${exactToast()}
     </main>
   `;
@@ -2011,10 +2307,11 @@ function renderRealSettings() {
     ["⌕", "Review Unverified Tokens", "›", ""],
     ["↻", "Refresh Balances", "›", "refresh"],
     ["▣", "Sync Devices", "›", ""],
+    ...(exactHasPin() ? [["⚷", "Lock Wallet", "›", "lock"]] : []),
     ["↺", "Restore Wallet", "›", "restore"],
     ["⌫", "Delete Wallet", "›", "delete"],
   ];
-  const actionFor = { restore: "access-restore", refresh: "sync-balances", delete: "delete-wallet" };
+  const actionFor = { restore: "access-restore", refresh: "sync-balances", delete: "delete-wallet", lock: "lock-wallet" };
   return `
     <main class="real-phone real-settings exact-${exactState.device}">
       <section class="real-settings-sheet">
@@ -2042,13 +2339,15 @@ function renderRealAddToken() {
 }
 
 function renderRealMobileScreens() {
+  // A locked wallet (or any PIN prompt) takes precedence over every screen.
+  if (exactState.locked || exactState.screen === "pin") return renderRealPin();
   if (exactState.screen === "landing") return renderRealLanding();
   if (exactState.screen === "access") return renderRealAccess();
   if (exactState.screen === "create") return renderRealCreate();
   if (exactState.screen === "confirm") return renderRealConfirm();
   if (exactState.screen === "restore") return renderRealRestore();
-  if (exactState.screen === "password") return renderRealPassword();
   if (exactState.screen === "detail") return renderRealDetail();
+  if (exactState.screen === "txdetail") return renderRealTxDetail();
   if (exactState.screen === "send") return renderRealSend();
   if (exactState.screen === "receive") return renderRealReceive();
   if (exactState.screen === "assets") return renderRealAssets();
@@ -2149,28 +2448,47 @@ exactRoot.addEventListener("click", (event) => {
         return;
       }
     }
-    exactState.screen = "password";
+    exactStartPinSetup();
   }
   if (target.dataset.action === "preview-wallet") {
     exactEnterPreviewWallet();
     exactState.screen = "home";
   }
-  if (target.dataset.action === "password-done") {
-    if (exactState.onboardingMode === "restore") {
-      exactEnterLiveWallet(exactState.restoreResolvedAddress);
-      exactState.toast = "Wallet restored";
-    } else if (exactState.onboardingMode === "create") {
-      const address = exactResolveRestore(exactState.generatedMnemonic) || exactRandomEvmAddress();
-      exactEnterLiveWallet(address);
-      exactState.toast = "Wallet ready";
-    } else {
-      exactEnterPreviewWallet();
-      exactState.toast = "Wallet ready";
+  if (target.dataset.action === "pin-key") {
+    const key = target.dataset.key;
+    exactState.pinError = "";
+    if (key === "‹") {
+      exactState.pinEntry = exactState.pinEntry.slice(0, -1);
+      exactRender();
+      return;
     }
-    exactState.passwordSet = true;
-    exactState.screen = "home";
+    if (exactState.pinEntry.length >= EXACT_PIN_LENGTH) {
+      exactRender();
+      return;
+    }
+    exactState.pinEntry += key;
+    if (exactState.pinEntry.length === EXACT_PIN_LENGTH) {
+      exactHandlePinComplete();
+      return;
+    }
     exactRender();
-    if (exactIsLive()) exactSyncLiveBalances();
+    return;
+  }
+  if (target.dataset.action === "pin-forgot") {
+    exactResetWallet();
+    exactState.screen = "landing";
+    exactState.toast = "Wallet reset — restore with your recovery phrase";
+    exactRender();
+    return;
+  }
+  if (target.dataset.action === "lock-wallet") {
+    if (!exactHasPin()) {
+      exactState.toast = "No PIN set for this wallet";
+      exactRender();
+      return;
+    }
+    exactLockWallet();
+    exactRender();
     return;
   }
   if (target.dataset.action === "sync-balances") {
@@ -2258,22 +2576,24 @@ exactRoot.addEventListener("click", (event) => {
       exactRender();
       return;
     }
-    exactState.transactions.unshift({
-      id: `pending-${Date.now()}`,
-      token: token.id,
-      network: network.id,
-      direction: "outgoing",
-      status: "pending",
-      amount: `-${amount} ${token.symbol}`,
-      value: "$0",
-      title: "Sent",
-      day: "Pending",
-      time: "Pending",
-      hash: `0x${Date.now().toString(16)}${Math.random().toString(16).slice(2).padEnd(30, "0")}`,
-    });
-    exactState.sendAmount = "";
-    exactState.screen = "detail";
-    exactState.toast = "Transaction added as Pending";
+    const recipient = (exactState.sendTo || "").trim();
+    if (!recipient) {
+      exactState.toast = `Enter a ${network.tag} recipient address`;
+      exactRender();
+      return;
+    }
+    exactState.pendingSend = { tokenId: token.id, networkId: network.id, amount, to: recipient };
+    if (exactHasPin()) {
+      // Require the PIN to authorize the transaction.
+      exactState.pinMode = "send";
+      exactState.pinStage = "";
+      exactState.pinEntry = "";
+      exactState.pinError = "";
+      exactState.screen = "pin";
+      exactRender();
+      return;
+    }
+    exactCompleteSend();
   }
   if (target.dataset.action === "copy-address") {
     const address = exactReceiveAddress(exactToken());
@@ -2283,6 +2603,22 @@ exactRoot.addEventListener("click", (event) => {
       /* clipboard unavailable */
     }
     exactState.toast = "Address copied";
+  }
+  if (target.dataset.action === "txdetail") {
+    exactState.selectedTx = target.dataset.tx;
+    exactState.screen = "txdetail";
+  }
+  if (target.dataset.action === "copy-txid") {
+    const tx = exactState.transactions.find((item) => item.id === exactState.selectedTx);
+    try {
+      navigator.clipboard?.writeText(tx ? tx.hash : "");
+    } catch {
+      /* clipboard unavailable */
+    }
+    exactState.toast = "Transaction ID copied";
+  }
+  if (target.dataset.action === "add-note") {
+    exactState.toast = "Notes are stored locally — coming soon";
   }
   if (target.dataset.action === "detail") exactState.screen = "detail";
   if (target.dataset.action === "send") exactState.screen = "send";
@@ -2327,11 +2663,14 @@ exactRoot.addEventListener("input", (event) => {
   if (event.target.matches("[data-send-field='amount']")) {
     exactState.sendAmount = event.target.value;
   }
+  if (event.target.matches("[data-send-field='to']")) {
+    exactState.sendTo = event.target.value;
+  }
 });
 
 window.addEventListener?.("resize", exactRender);
 exactRestoreRuntime();
 exactRender();
-if (exactIsLive() && exactRuntime.unlocked) exactSyncLiveBalances();
+if (exactIsLive() && exactRuntime.unlocked && !exactState.locked) exactSyncLiveBalances();
 
 window.EXX_EXACT_DEBUG = { exactState, exactTokens, exactIcon, exactRender, exactRuntime, exactSyncLiveBalances };
