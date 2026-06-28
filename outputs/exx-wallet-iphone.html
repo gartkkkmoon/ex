@@ -100,6 +100,7 @@ button {
   position: relative;
   width: 649px;
   height: 1280px;
+  padding-top: 48px; /* status-bar safe area */
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(72, 74, 113, 0.74) 0%, rgba(31, 33, 59, 0.98) 32%, #15172a 100%);
@@ -1378,7 +1379,7 @@ button {
 .real-receive-back {
   position: absolute;
   z-index: 5;
-  top: 38px;
+  top: 80px;
   left: 28px;
   width: 72px;
   height: 72px;
@@ -1733,7 +1734,7 @@ button {
 .real-profile-back {
   position: absolute;
   z-index: 5;
-  top: 38px;
+  top: 80px;
   left: 28px;
   width: 72px;
   height: 72px;
@@ -1961,6 +1962,239 @@ button {
   font-size: 20px;
   font-weight: 760;
   box-shadow: 0 18px 42px rgba(0, 0, 0, 0.34);
+}
+
+/* ===================================================================== */
+/* Device chrome (iOS / Android) + live wallet UI                         */
+/* ===================================================================== */
+.exact-statusbar {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 48px;
+  padding: 0 40px;
+  pointer-events: none;
+  color: #fff;
+  font-weight: 700;
+}
+
+.exact-statusbar .exact-sb-time {
+  font-size: 26px;
+  letter-spacing: 0.5px;
+  min-width: 120px;
+}
+
+.exact-statusbar.android .exact-sb-time {
+  font-size: 23px;
+}
+
+.exact-statusbar .exact-sb-right {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 120px;
+  justify-content: flex-end;
+}
+
+.exact-sb-icons {
+  display: block;
+}
+
+.exact-sb-notch {
+  width: 200px;
+  height: 36px;
+  border-radius: 999px;
+  background: #05060c;
+}
+
+.exact-sb-punch {
+  width: 22px;
+  height: 22px;
+  border-radius: 50%;
+  background: #05060c;
+}
+
+.exact-home-indicator {
+  position: absolute;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 60;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  pointer-events: none;
+}
+
+.exact-home-indicator.ios {
+  height: 26px;
+}
+
+.exact-home-indicator.ios span {
+  width: 188px;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.92);
+}
+
+.exact-home-indicator.android {
+  height: 40px;
+  gap: 120px;
+  color: rgba(255, 255, 255, 0.78);
+  font-size: 30px;
+}
+
+/* live status + zero state */
+.real-live-status {
+  margin-top: 14px;
+  color: rgba(204, 208, 235, 0.7);
+  font-size: 21px;
+  font-weight: 650;
+}
+
+.real-live-status.error {
+  color: #ff8d8d;
+}
+
+.real-portfolio-ring.is-empty .track {
+  stroke: rgba(255, 255, 255, 0.12);
+}
+
+.real-zero-hint {
+  display: grid;
+  gap: 8px;
+  margin: 6px 4px 18px;
+  border-radius: 24px;
+  padding: 28px 26px;
+  background: rgba(41, 44, 70, 0.7);
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.real-zero-hint strong {
+  font-size: 26px;
+  font-weight: 760;
+}
+
+.real-zero-hint span {
+  color: rgba(226, 228, 244, 0.66);
+  font-size: 21px;
+  line-height: 1.4;
+}
+
+/* restore / settings form fields */
+.real-field-label {
+  display: block;
+  width: 100%;
+  margin: 22px 0 10px;
+  color: rgba(232, 233, 246, 0.7);
+  text-align: left;
+  font-size: 18px;
+  font-weight: 760;
+  text-transform: none;
+}
+
+.real-field-label small {
+  font-weight: 600;
+  color: rgba(232, 233, 246, 0.45);
+}
+
+.real-text-input {
+  width: 100%;
+  min-height: 72px;
+  border: 0;
+  outline: 0;
+  border-radius: 22px;
+  padding: 0 20px;
+  background: rgba(10, 12, 24, 0.55);
+  color: #fff;
+  font-size: 22px;
+}
+
+.real-restore .real-sheet-panel textarea {
+  min-height: 140px;
+}
+
+/* live wallet card in settings */
+.real-wallet-card {
+  display: grid;
+  gap: 12px;
+  margin: 0 0 22px;
+  border-radius: 26px;
+  padding: 24px 24px 26px;
+  background: linear-gradient(180deg, rgba(74, 64, 140, 0.5), rgba(43, 46, 74, 0.92));
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.real-wallet-card-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.real-wallet-mode {
+  font-size: 20px;
+  font-weight: 800;
+  color: rgba(226, 228, 244, 0.7);
+}
+
+.real-wallet-mode.live {
+  color: #57e0a6;
+}
+
+.real-wallet-card-head strong {
+  font-size: 26px;
+  font-weight: 740;
+}
+
+.real-wallet-card code {
+  display: block;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: rgba(206, 210, 236, 0.78);
+  font-size: 20px;
+}
+
+.real-wallet-card-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 12px;
+  margin-top: 6px;
+}
+
+.real-wallet-card-actions button {
+  flex: 1 1 auto;
+  min-height: 64px;
+  border: 0;
+  border-radius: 20px;
+  padding: 0 20px;
+  background: rgba(134, 92, 255, 0.9);
+  color: #fff;
+  font-size: 21px;
+  font-weight: 720;
+}
+
+.real-wallet-card-actions button[disabled] {
+  opacity: 0.6;
+}
+
+.real-wallet-card-actions button[data-action="switch-preview"] {
+  flex: 0 0 auto;
+  background: rgba(255, 255, 255, 0.12);
+}
+
+.real-wallet-card small {
+  color: rgba(226, 228, 244, 0.6);
+  font-size: 19px;
+}
+
+.real-wallet-card .real-wallet-error {
+  color: #ff8d8d;
 }
 
     </style>
@@ -2549,7 +2783,208 @@ const exactState = {
     "stellar:stellar",
   ]),
   restorePhrase: "",
+  restoreAddress: "",
 };
+
+// ---------------------------------------------------------------------------
+// Live wallet runtime (self-contained, no ES imports so the inline bundle works)
+// ---------------------------------------------------------------------------
+const EXACT_RUNTIME_KEY = "exx.exact.runtime.v1";
+
+const exactRuntime = {
+  mode: "preview", // "preview" (placeholder demo data) | "live" (real Ankr balances)
+  address: "",
+  ankrToken: "",
+  unlocked: false,
+  holdings: {}, // tokenId -> { amount: string, value: number }
+  totalUsd: 0,
+  status: "",
+  error: "",
+  loading: false,
+};
+
+function exactIsLive() {
+  return exactRuntime.mode === "live";
+}
+
+function exactValidEvmAddress(value) {
+  return /^0x[0-9a-fA-F]{40}$/.test(String(value || "").trim());
+}
+
+function exactRandomEvmAddress() {
+  const source = window.crypto || globalThis.crypto;
+  const bytes = source?.getRandomValues?.(new Uint8Array(20));
+  if (!bytes) return `0x${"0".repeat(40)}`;
+  return `0x${Array.from(bytes, (byte) => byte.toString(16).padStart(2, "0")).join("")}`;
+}
+
+function exactPersistRuntime() {
+  try {
+    window.localStorage?.setItem(EXACT_RUNTIME_KEY, JSON.stringify({
+      mode: exactRuntime.mode,
+      address: exactRuntime.address,
+      ankrToken: exactRuntime.ankrToken,
+      unlocked: exactRuntime.unlocked,
+      holdings: exactRuntime.holdings,
+      totalUsd: exactRuntime.totalUsd,
+    }));
+  } catch {
+    /* storage unavailable (private mode / SSR smoke) — keep in-memory only */
+  }
+}
+
+function exactRestoreRuntime() {
+  let saved;
+  try {
+    const raw = window.localStorage?.getItem(EXACT_RUNTIME_KEY);
+    if (!raw) return;
+    saved = JSON.parse(raw);
+  } catch {
+    return;
+  }
+  if (!saved || typeof saved !== "object") return;
+  exactRuntime.mode = saved.mode === "live" ? "live" : "preview";
+  exactRuntime.address = saved.address || "";
+  exactRuntime.ankrToken = saved.ankrToken || "";
+  exactRuntime.unlocked = Boolean(saved.unlocked);
+  exactRuntime.holdings = saved.holdings && typeof saved.holdings === "object" ? saved.holdings : {};
+  exactRuntime.totalUsd = Number(saved.totalUsd) || 0;
+  if (exactRuntime.unlocked) {
+    exactState.passwordSet = true;
+    exactState.screen = "home";
+  }
+}
+
+// Ankr Advanced API (multichain) — public endpoint works without a key for light use,
+// and `/multichain/<token>` is used when a key is provided.
+const EXACT_ANKR_CHAINS = [
+  "eth", "polygon", "bsc", "arbitrum", "optimism", "base", "avalanche",
+  "fantom", "gnosis", "linea", "scroll", "flare", "syscoin", "xlayer",
+];
+
+function exactAnkrEndpoint() {
+  const token = String(exactRuntime.ankrToken || "").trim();
+  return token ? `https://rpc.ankr.com/multichain/${token}` : "https://rpc.ankr.com/multichain";
+}
+
+async function exactAnkrAccountBalance(address) {
+  const assets = [];
+  let totalUsd = 0;
+  let pageToken = "";
+  let requestId = 1;
+  do {
+    const response = await fetch(exactAnkrEndpoint(), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: requestId++,
+        method: "ankr_getAccountBalance",
+        params: {
+          walletAddress: address,
+          blockchain: EXACT_ANKR_CHAINS,
+          onlyWhitelisted: true,
+          pageSize: 100,
+          pageToken,
+        },
+      }),
+    });
+    if (!response.ok) throw new Error(`Ankr HTTP ${response.status}`);
+    const payload = await response.json();
+    if (payload.error) throw new Error(payload.error.message || "Ankr request failed");
+    const result = payload.result || {};
+    totalUsd += Number(result.totalBalanceUsd || 0) || 0;
+    for (const item of result.assets || []) assets.push(item);
+    pageToken = result.nextPageToken || "";
+  } while (pageToken);
+  return { totalUsd, assets };
+}
+
+function exactFormatAmount(amount) {
+  if (!Number.isFinite(amount) || amount === 0) return "0";
+  const maximumFractionDigits = amount >= 1 ? 4 : 8;
+  return amount.toLocaleString("en-US", { maximumFractionDigits });
+}
+
+function exactApplyLiveBalances({ assets }) {
+  const bySymbol = new Map();
+  for (const item of assets || []) {
+    const symbol = String(item.tokenSymbol || item.symbol || "").toUpperCase();
+    if (!symbol) continue;
+    const amount = Number(item.balance || item.tokenBalance || 0) || 0;
+    const valueUsd = Number(item.balanceUsd || item.balanceUSD || 0) || 0;
+    const previous = bySymbol.get(symbol) || { amount: 0, value: 0 };
+    bySymbol.set(symbol, { amount: previous.amount + amount, value: previous.value + valueUsd });
+  }
+  const holdings = {};
+  const assigned = new Set();
+  for (const token of exactTokens) {
+    const symbol = token.symbol.toUpperCase();
+    if (assigned.has(symbol)) continue; // sum a symbol once, under its primary asset
+    const aggregate = bySymbol.get(symbol);
+    if (aggregate && aggregate.amount > 0) {
+      holdings[token.id] = { amount: exactFormatAmount(aggregate.amount), value: aggregate.value };
+      assigned.add(symbol);
+    }
+  }
+  exactRuntime.holdings = holdings;
+  exactRuntime.totalUsd = Object.values(holdings).reduce((sum, entry) => sum + (entry.value || 0), 0);
+}
+
+async function exactSyncLiveBalances() {
+  if (!exactIsLive() || !exactRuntime.address) return;
+  exactRuntime.loading = true;
+  exactRuntime.status = "Syncing balances from Ankr…";
+  exactRuntime.error = "";
+  exactRender();
+  try {
+    const data = await exactAnkrAccountBalance(exactRuntime.address);
+    exactApplyLiveBalances(data);
+    exactRuntime.status = `Synced ${exactShortHash(exactRuntime.address)}`;
+  } catch (error) {
+    exactRuntime.error = error.message || "Balance sync failed";
+    exactRuntime.status = "Live sync failed — showing last known balances";
+  } finally {
+    exactRuntime.loading = false;
+    exactPersistRuntime();
+    exactRender();
+  }
+}
+
+function exactEnterLiveWallet(address) {
+  exactRuntime.mode = "live";
+  exactRuntime.address = address;
+  exactRuntime.unlocked = true;
+  exactRuntime.holdings = {};
+  exactRuntime.totalUsd = 0;
+  exactPersistRuntime();
+}
+
+function exactEnterPreviewWallet() {
+  exactRuntime.mode = "preview";
+  exactRuntime.unlocked = true;
+  exactRuntime.error = "";
+  exactRuntime.status = "";
+  exactPersistRuntime();
+}
+
+function exactResetWallet() {
+  exactRuntime.mode = "preview";
+  exactRuntime.address = "";
+  exactRuntime.unlocked = false;
+  exactRuntime.holdings = {};
+  exactRuntime.totalUsd = 0;
+  exactRuntime.status = "";
+  exactRuntime.error = "";
+  exactState.passwordSet = false;
+  exactState.restoreAddress = "";
+  exactState.restorePhrase = "";
+  try {
+    window.localStorage?.removeItem(EXACT_RUNTIME_KEY);
+  } catch {
+    /* ignore */
+  }
+}
 
 const exactSeedWords = [
   "orbit",
@@ -2652,8 +3087,18 @@ function exactNetworkFeeSymbol(token = exactToken()) {
   return exactSelectedNetwork(token).feeSymbol || exactNetworkShort(token);
 }
 
+const EXACT_EVM_NETWORK_IDS = new Set([
+  "ethereum", "polygon", "bsc", "arbitrum", "optimism", "base", "avalanche",
+  "fantom", "gnosis", "linea", "scroll", "flare", "story", "syscoin", "taiko",
+  "telos", "xai", "xlayer", "hyperevm",
+]);
+
 function exactReceiveAddress(token = exactToken()) {
-  return exactSelectedNetwork(token).address || "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289";
+  const network = exactSelectedNetwork(token);
+  if (exactIsLive() && exactRuntime.address && EXACT_EVM_NETWORK_IDS.has(network.id)) {
+    return exactRuntime.address;
+  }
+  return network.address || "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289";
 }
 
 function exactHexToRgb(color) {
@@ -3032,6 +3477,7 @@ function exactFormatUsd(value) {
 }
 
 function exactPortfolioValue() {
+  if (exactIsLive()) return exactRuntime.totalUsd || 0;
   return exactTokens
     .filter((token) => exactTokenEnabled(token))
     .reduce((total, token) => total + exactComputedTokenValue(token), 0);
@@ -3057,8 +3503,32 @@ function exactMoneyParts(value) {
   return { whole, cents };
 }
 
+// Build proportional donut segments from the actual holdings. Returns [] when the
+// portfolio is empty so the ring renders as a bare track (true zero state).
+function exactRingSegments() {
+  const total = exactPortfolioValue();
+  if (!total || total <= 0) return [];
+  const holdings = exactSortedEnabledTokens()
+    .map((token) => ({ color: token.color, value: exactComputedTokenValue(token) }))
+    .filter((entry) => entry.value > 0);
+  if (!holdings.length) return [];
+  const top = holdings.slice(0, 3);
+  const restValue = holdings.slice(3).reduce((sum, entry) => sum + entry.value, 0);
+  if (restValue > 0) top.push({ color: "#6b7088", value: restValue });
+  const gap = top.length > 1 ? 1.5 : 0;
+  let offset = 0;
+  return top.map((entry) => {
+    const pct = (entry.value / total) * 100;
+    const length = Math.max(pct - gap, 0.5);
+    const segment = { color: entry.color, length, offset };
+    offset += pct;
+    return segment;
+  });
+}
+
 function exactTokenBalance(token) {
   if (!exactTokenEnabled(token)) return "0";
+  if (exactIsLive()) return exactRuntime.holdings[token.id]?.amount || "0";
   if (exactPortfolioHoldings[token.id]) return exactPortfolioHoldings[token.id].amount;
   if (token.id === "tether") return "0";
   if (token.id === "usd-coin") return "0";
@@ -3083,6 +3553,7 @@ function exactTokenValue(token) {
 
 function exactComputedTokenValue(token) {
   if (!exactTokenEnabled(token)) return 0;
+  if (exactIsLive()) return exactRuntime.holdings[token.id]?.value || 0;
   if (exactPortfolioHoldings[token.id]) return exactPortfolioHoldings[token.id].value;
   const balance = Number(String(exactTokenBalance(token)).replace(/,/g, ""));
   if (!Number.isFinite(balance) || balance <= 0) return 0;
@@ -3349,7 +3820,7 @@ function renderRealAccess() {
           <span>Use a local-only recovery flow. No phrase is sent to a server.</span>
         </button>
       </section>
-      <button class="real-secondary-wide" data-action="home">Preview wallet</button>
+      <button class="real-secondary-wide" data-action="preview-wallet">Preview wallet</button>
       ${exactToast()}
     </main>
   `;
@@ -3396,9 +3867,14 @@ function renderRealRestore() {
     <main class="real-phone real-create exact-${exactState.device}">
       ${realTopBar({ back: "access", title: "Restore Wallet" })}
       <section class="real-sheet-panel">
-        <h1>Restore locally</h1>
-        <p>Only use demo words in this preview. A production version must keep the phrase on-device and encrypt before storage.</p>
-        <textarea data-access-field="restorePhrase" placeholder="word 1 word 2 word 3 ...">${exactState.restorePhrase}</textarea>
+        <h1>Restore your wallet</h1>
+        <p>Your secret phrase stays on this device. Paste the public wallet address you want to load — Exodus reads its live balances from Ankr.</p>
+        <label class="real-field-label">Secret recovery phrase <small>(kept local, never sent)</small></label>
+        <textarea data-access-field="restorePhrase" placeholder="word 1  word 2  word 3 …">${exactState.restorePhrase}</textarea>
+        <label class="real-field-label">Wallet address to load</label>
+        <input class="real-text-input" data-access-field="restoreAddress" placeholder="0x…" value="${exactState.restoreAddress}" />
+        <label class="real-field-label">Ankr API key <small>(optional — improves reliability)</small></label>
+        <input class="real-text-input" data-runtime-field="ankrToken" placeholder="paste Ankr Advanced API key" value="${exactRuntime.ankrToken}" />
         <button class="real-primary-button" data-action="phrase-confirmed">Continue</button>
       </section>
       ${exactToast()}
@@ -3426,7 +3902,19 @@ function renderRealPassword() {
 
 function renderRealHome() {
   const enabled = exactSortedEnabledTokens();
-  const portfolio = exactMoneyParts(exactPortfolioValue());
+  const total = exactPortfolioValue();
+  const portfolio = exactMoneyParts(total);
+  const segments = exactRingSegments();
+  const isEmpty = !total || total <= 0;
+  const statusLine = exactIsLive()
+    ? `<div class="real-live-status ${exactRuntime.error ? "error" : ""}">${
+        exactRuntime.loading
+          ? "Syncing balances…"
+          : exactRuntime.error
+            ? exactRuntime.error
+            : `Live · ${exactShortHash(exactRuntime.address)}`
+      }</div>`
+    : "";
   return `
     <main class="real-phone real-home exact-${exactState.device}">
       <div class="real-scroll">
@@ -3435,17 +3923,16 @@ function renderRealHome() {
           <button class="real-search-round" data-action="assets" aria-label="Search assets">⌕</button>
         </header>
         <section class="real-portfolio-hero">
-          <button class="real-portfolio-ring" data-action="assets" aria-label="Wallet balance">
+          <button class="real-portfolio-ring ${isEmpty ? "is-empty" : ""}" data-action="${exactIsLive() ? "sync-balances" : "assets"}" aria-label="Wallet balance">
             <svg viewBox="0 0 420 420" aria-hidden="true">
               <circle class="track" cx="210" cy="210" r="174"></circle>
-              <circle class="segment yellow" cx="210" cy="210" r="174" pathLength="100"></circle>
-              <circle class="segment blue" cx="210" cy="210" r="174" pathLength="100"></circle>
-              <circle class="segment purple" cx="210" cy="210" r="174" pathLength="100"></circle>
+              ${segments.map((segment) => `<circle class="segment" cx="210" cy="210" r="174" pathLength="100" style="stroke:${segment.color};stroke-dasharray:${segment.length.toFixed(2)} ${(100 - segment.length).toFixed(2)};stroke-dashoffset:${(-segment.offset).toFixed(2)}"></circle>`).join("")}
             </svg>
             <span class="real-portfolio-amount">
               <b>${portfolio.whole}</b><small>.${portfolio.cents}</small>
             </span>
           </button>
+          ${statusLine}
           <button class="real-holdings-sort" data-action="holdings-sort">${exactHoldingsSortLabel()} <span>⌄</span></button>
           ${exactState.showHoldingsSort ? `
             <div class="real-holdings-menu">
@@ -3455,6 +3942,7 @@ function renderRealHome() {
           ` : ""}
         </section>
         <section class="real-list">
+          ${isEmpty && exactIsLive() ? `<div class="real-zero-hint"><strong>No balances yet</strong><span>Receive crypto to this wallet, or pull to refresh once it is funded.</span></div>` : ""}
           ${enabled.map((token) => realHoldingRow(token)).join("")}
           <button class="real-add-more" data-action="add-token">Add More</button>
         </section>
@@ -3717,6 +4205,32 @@ function renderRealProfile() {
   `;
 }
 
+function renderRealWalletCard() {
+  const live = exactIsLive();
+  const statusLine = exactRuntime.error
+    ? `<small class="real-wallet-error">${exactRuntime.error}</small>`
+    : exactRuntime.status
+      ? `<small>${exactRuntime.status}</small>`
+      : "";
+  return `
+    <section class="real-wallet-card">
+      <div class="real-wallet-card-head">
+        <span class="real-wallet-mode ${live ? "live" : "preview"}">${live ? "● Live" : "○ Demo"}</span>
+        <strong>${live ? exactFormatUsd(exactPortfolioValue()) : "Demo portfolio"}</strong>
+      </div>
+      <code>${live && exactRuntime.address ? exactRuntime.address : "No live wallet loaded"}</code>
+      <label class="real-field-label">Ankr API key <small>(optional)</small></label>
+      <input class="real-text-input" data-runtime-field="ankrToken" placeholder="paste Ankr Advanced API key" value="${exactRuntime.ankrToken}" />
+      <div class="real-wallet-card-actions">
+        ${live ? `<button data-action="sync-balances"${exactRuntime.loading ? " disabled" : ""}>${exactRuntime.loading ? "Syncing…" : "Refresh balances"}</button>` : ""}
+        <button data-action="access-restore">${live ? "Restore another" : "Restore wallet"}</button>
+        ${live ? `<button data-action="switch-preview">Demo</button>` : ""}
+      </div>
+      ${statusLine}
+    </section>
+  `;
+}
+
 function renderRealSettings() {
   const rows = [
     ["♡", "Help Improve Exodus", "›", ""],
@@ -3725,19 +4239,21 @@ function renderRealSettings() {
     ["▢", "Connect Trezor", "›", ""],
     ["◌", "Portfolio Animation", "", "toggle"],
     ["⌕", "Review Unverified Tokens", "›", ""],
-    ["↻", "Refresh Networks", "›", ""],
+    ["↻", "Refresh Balances", "›", "refresh"],
     ["▣", "Sync Devices", "›", ""],
     ["↺", "Restore Wallet", "›", "restore"],
-    ["⌫", "Delete Wallet", "›", ""],
+    ["⌫", "Delete Wallet", "›", "delete"],
   ];
+  const actionFor = { restore: "access-restore", refresh: "sync-balances", delete: "delete-wallet" };
   return `
     <main class="real-phone real-settings exact-${exactState.device}">
       <section class="real-settings-sheet">
         <button class="real-handle" data-action="back" aria-label="Back"></button>
         <h1>Settings</h1>
+        ${renderRealWalletCard()}
         <div class="real-settings-list">
           ${rows.map(([icon, label, arrow, type]) => `
-            <button data-action="${type === "restore" ? "access-restore" : "noop"}">
+            <button data-action="${actionFor[type] || "noop"}">
               <strong>${icon}</strong>
               <span>${label}</span>
               ${type === "toggle" ? "<em></em>" : `<small>${arrow}</small>`}
@@ -3776,14 +4292,47 @@ function renderExactMobileScreens() {
   return renderRealMobileScreens();
 }
 
+function exactStatusBar() {
+  const ios = exactState.device !== "android";
+  const icons = `
+    <svg class="exact-sb-icons" width="118" height="24" viewBox="0 0 118 24" fill="#fff" aria-hidden="true">
+      <rect x="0" y="14" width="5.5" height="9" rx="1.4"></rect>
+      <rect x="8.5" y="10" width="5.5" height="13" rx="1.4"></rect>
+      <rect x="17" y="6" width="5.5" height="17" rx="1.4"></rect>
+      <rect x="25.5" y="1.5" width="5.5" height="21.5" rx="1.4"></rect>
+      <path d="M44.5 7.6c5.4-4.8 14.6-4.8 20 0l-2.7 3c-3.9-3.4-10.7-3.4-14.6 0z"></path>
+      <path d="M49.2 12.4c2.9-2.5 7.7-2.5 10.6 0l-2.7 3c-1.5-1.2-3.7-1.2-5.2 0z"></path>
+      <circle cx="54.5" cy="20" r="2.5"></circle>
+      <rect x="86" y="4" width="27" height="16" rx="4.5" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="2"></rect>
+      <rect x="88.5" y="6.5" width="19" height="11" rx="2"></rect>
+      <rect x="114.5" y="9" width="2.6" height="6" rx="1.2" fill="#fff" fill-opacity="0.55"></rect>
+    </svg>`;
+  return `
+    <div class="exact-statusbar ${ios ? "ios" : "android"}">
+      <span class="exact-sb-time">9:41</span>
+      ${ios ? `<span class="exact-sb-notch"></span>` : `<span class="exact-sb-punch"></span>`}
+      <span class="exact-sb-right">${icons}</span>
+    </div>
+  `;
+}
+
+function exactHomeIndicator() {
+  const ios = exactState.device !== "android";
+  return ios
+    ? `<div class="exact-home-indicator ios"><span></span></div>`
+    : `<div class="exact-home-indicator android"><span class="nav-back">‹</span><span class="nav-home">○</span><span class="nav-recent">▢</span></div>`;
+}
+
 function exactRender() {
   const phoneWidth = 649;
   const phoneHeight = 1280;
   const scale = exactScale(phoneWidth);
   exactRoot.innerHTML = `
     <div class="exact-stage" style="width:${Math.round(phoneWidth * scale)}px;height:${Math.round(phoneHeight * scale)}px">
-      <div class="exact-scale" style="width:${phoneWidth}px;height:${phoneHeight}px;transform:scale(${scale})">
+      <div class="exact-scale exact-device-${exactState.device}" style="width:${phoneWidth}px;height:${phoneHeight}px;transform:scale(${scale})">
         ${renderExactMobileScreens()}
+        ${exactStatusBar()}
+        ${exactHomeIndicator()}
       </div>
     </div>
   `;
@@ -3825,11 +4374,47 @@ exactRoot.addEventListener("click", (event) => {
   if (target.dataset.action === "confirm") exactState.screen = "confirm";
   if (target.dataset.action === "restore") exactState.screen = "restore";
   if (target.dataset.action === "seed-saved") exactState.screen = "confirm";
-  if (target.dataset.action === "phrase-confirmed") exactState.screen = "password";
+  if (target.dataset.action === "phrase-confirmed") {
+    if (exactState.onboardingMode === "restore" && !exactValidEvmAddress(exactState.restoreAddress)) {
+      exactState.toast = "Enter a valid 0x wallet address to restore";
+      exactRender();
+      return;
+    }
+    exactState.screen = "password";
+  }
+  if (target.dataset.action === "preview-wallet") {
+    exactEnterPreviewWallet();
+    exactState.screen = "home";
+  }
   if (target.dataset.action === "password-done") {
+    if (exactState.onboardingMode === "restore") {
+      exactEnterLiveWallet(exactState.restoreAddress.trim());
+      exactState.toast = "Wallet restored";
+    } else if (exactState.onboardingMode === "create") {
+      exactEnterLiveWallet(exactRandomEvmAddress());
+      exactState.toast = "Wallet ready";
+    } else {
+      exactEnterPreviewWallet();
+      exactState.toast = "Wallet ready";
+    }
     exactState.passwordSet = true;
     exactState.screen = "home";
-    exactState.toast = "Wallet ready";
+    exactRender();
+    if (exactIsLive()) exactSyncLiveBalances();
+    return;
+  }
+  if (target.dataset.action === "sync-balances") {
+    exactSyncLiveBalances();
+    return;
+  }
+  if (target.dataset.action === "switch-preview") {
+    exactEnterPreviewWallet();
+    exactState.toast = "Showing demo portfolio";
+  }
+  if (target.dataset.action === "delete-wallet") {
+    exactResetWallet();
+    exactState.screen = "landing";
+    exactState.toast = "Wallet removed from this device";
   }
   if (target.dataset.action === "open-access") {
     exactState.toast = "This action will use the same secured wallet session.";
@@ -3944,6 +4529,13 @@ exactRoot.addEventListener("input", (event) => {
   if (event.target.matches("[data-access-field='restorePhrase']")) {
     exactState.restorePhrase = event.target.value;
   }
+  if (event.target.matches("[data-access-field='restoreAddress']")) {
+    exactState.restoreAddress = event.target.value;
+  }
+  if (event.target.matches("[data-runtime-field='ankrToken']")) {
+    exactRuntime.ankrToken = event.target.value.trim();
+    exactPersistRuntime();
+  }
   if (event.target.matches("[data-action='asset-search']")) {
     exactState.assetSearch = event.target.value;
     exactState.collapsedAssets.clear();
@@ -3958,9 +4550,11 @@ exactRoot.addEventListener("input", (event) => {
 });
 
 window.addEventListener?.("resize", exactRender);
+exactRestoreRuntime();
 exactRender();
+if (exactIsLive() && exactRuntime.unlocked) exactSyncLiveBalances();
 
-window.EXX_EXACT_DEBUG = { exactState, exactTokens, exactIcon, exactRender };
+window.EXX_EXACT_DEBUG = { exactState, exactTokens, exactIcon, exactRender, exactRuntime, exactSyncLiveBalances };
 
     </script>
   </body>

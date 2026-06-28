@@ -331,6 +331,19 @@ button {
   font-size: 22px;
 }
 
+.token-icon.has-image {
+  background: transparent;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.token-icon.has-image img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+  display: block;
+}
+
 .asset-copy {
   display: grid;
   gap: 3px;
@@ -1008,6 +1021,8 @@ const SUPPORTED_CHAINS = {
     symbol: "ETH",
     chainId: 1,
     ankrSlug: "eth",
+    tokenApiSlug: "eth",
+    rpcFamily: "evm",
     explorer: "https://etherscan.io",
     confirmations: 12,
     color: "#8f83ff",
@@ -1015,9 +1030,11 @@ const SUPPORTED_CHAINS = {
   polygon: {
     id: "polygon",
     label: "Polygon",
-    symbol: "MATIC",
+    symbol: "POL",
     chainId: 137,
     ankrSlug: "polygon",
+    tokenApiSlug: "polygon",
+    rpcFamily: "evm",
     explorer: "https://polygonscan.com",
     confirmations: 80,
     color: "#8f5cff",
@@ -1028,6 +1045,8 @@ const SUPPORTED_CHAINS = {
     symbol: "BNB",
     chainId: 56,
     ankrSlug: "bsc",
+    tokenApiSlug: "bsc",
+    rpcFamily: "evm",
     explorer: "https://bscscan.com",
     confirmations: 20,
     color: "#f3ba2f",
@@ -1038,6 +1057,8 @@ const SUPPORTED_CHAINS = {
     symbol: "ETH",
     chainId: 42161,
     ankrSlug: "arbitrum",
+    tokenApiSlug: "arbitrum",
+    rpcFamily: "evm",
     explorer: "https://arbiscan.io",
     confirmations: 20,
     color: "#4d8dff",
@@ -1048,11 +1069,194 @@ const SUPPORTED_CHAINS = {
     symbol: "ETH",
     chainId: 10,
     ankrSlug: "optimism",
+    tokenApiSlug: "optimism",
+    rpcFamily: "evm",
     explorer: "https://optimistic.etherscan.io",
     confirmations: 20,
     color: "#ff4b5c",
   },
+  base: {
+    id: "base",
+    label: "Base",
+    symbol: "ETH",
+    chainId: 8453,
+    ankrSlug: "base",
+    tokenApiSlug: "base",
+    rpcFamily: "evm",
+    explorer: "https://basescan.org",
+    confirmations: 20,
+    color: "#4f8dff",
+  },
+  avalanche: {
+    id: "avalanche",
+    label: "Avalanche",
+    symbol: "AVAX",
+    chainId: 43114,
+    ankrSlug: "avalanche",
+    tokenApiSlug: "avalanche",
+    rpcFamily: "evm",
+    explorer: "https://snowtrace.io",
+    confirmations: 20,
+    color: "#e84142",
+  },
+  fantom: {
+    id: "fantom",
+    label: "Fantom",
+    symbol: "FTM",
+    chainId: 250,
+    ankrSlug: "fantom",
+    tokenApiSlug: "fantom",
+    rpcFamily: "evm",
+    explorer: "https://ftmscan.com",
+    confirmations: 20,
+    color: "#1969ff",
+  },
+  gnosis: {
+    id: "gnosis",
+    label: "Gnosis",
+    symbol: "xDAI",
+    chainId: 100,
+    ankrSlug: "gnosis",
+    tokenApiSlug: "gnosis",
+    rpcFamily: "evm",
+    explorer: "https://gnosisscan.io",
+    confirmations: 20,
+    color: "#48a987",
+  },
+  linea: {
+    id: "linea",
+    label: "Linea",
+    symbol: "ETH",
+    chainId: 59144,
+    ankrSlug: "linea",
+    tokenApiSlug: "linea",
+    rpcFamily: "evm",
+    explorer: "https://lineascan.build",
+    confirmations: 20,
+    color: "#72f0b0",
+  },
+  scroll: {
+    id: "scroll",
+    label: "Scroll",
+    symbol: "ETH",
+    chainId: 534352,
+    ankrSlug: "scroll",
+    tokenApiSlug: "scroll",
+    rpcFamily: "evm",
+    explorer: "https://scrollscan.com",
+    confirmations: 20,
+    color: "#f4d4aa",
+  },
+  flare: {
+    id: "flare",
+    label: "Flare",
+    symbol: "FLR",
+    chainId: 14,
+    ankrSlug: "flare",
+    tokenApiSlug: "flare",
+    rpcFamily: "evm",
+    explorer: "https://flare-explorer.flare.network",
+    confirmations: 20,
+    color: "#e62058",
+  },
+  story: {
+    id: "story",
+    label: "Story",
+    symbol: "IP",
+    chainId: 1514,
+    ankrSlug: "story_mainnet",
+    tokenApiSlug: "story_mainnet",
+    rpcFamily: "evm",
+    explorer: "https://www.storyscan.xyz",
+    confirmations: 20,
+    color: "#72e2ff",
+  },
+  syscoin: {
+    id: "syscoin",
+    label: "Syscoin",
+    symbol: "SYS",
+    chainId: 57,
+    ankrSlug: "syscoin",
+    tokenApiSlug: "syscoin",
+    rpcFamily: "evm",
+    explorer: "https://explorer.syscoin.org",
+    confirmations: 20,
+    color: "#00a4ff",
+  },
+  taiko: {
+    id: "taiko",
+    label: "Taiko",
+    symbol: "ETH",
+    chainId: 167000,
+    ankrSlug: "taiko",
+    tokenApiSlug: "taiko",
+    rpcFamily: "evm",
+    explorer: "https://taikoscan.io",
+    confirmations: 20,
+    color: "#e81899",
+  },
+  telos: {
+    id: "telos",
+    label: "Telos",
+    symbol: "TLOS",
+    chainId: 40,
+    ankrSlug: "telos",
+    tokenApiSlug: "telos",
+    rpcFamily: "evm",
+    explorer: "https://teloscan.io",
+    confirmations: 20,
+    color: "#7048e8",
+  },
+  xai: {
+    id: "xai",
+    label: "Xai",
+    symbol: "XAI",
+    chainId: 660279,
+    ankrSlug: "xai",
+    tokenApiSlug: "xai",
+    rpcFamily: "evm",
+    explorer: "https://explorer.xai-chain.net",
+    confirmations: 20,
+    color: "#f24a62",
+  },
+  xlayer: {
+    id: "xlayer",
+    label: "X Layer",
+    symbol: "OKB",
+    chainId: 196,
+    ankrSlug: "xlayer",
+    tokenApiSlug: "xlayer",
+    rpcFamily: "evm",
+    explorer: "https://www.oklink.com/xlayer",
+    confirmations: 20,
+    color: "#121212",
+  },
+  stellar: {
+    id: "stellar",
+    label: "Stellar",
+    symbol: "XLM",
+    ankrSlug: "stellar",
+    tokenApiSlug: "stellar",
+    rpcFamily: "stellar",
+    explorer: "https://stellar.expert",
+    confirmations: 1,
+    color: "#dce3ef",
+  },
 };
+
+const EVM_CHAIN_IDS = Object.values(SUPPORTED_CHAINS)
+  .filter((chain) => chain.rpcFamily === "evm")
+  .map((chain) => chain.id);
+
+const TOKEN_API_CHAIN_IDS = Object.values(SUPPORTED_CHAINS)
+  .filter((chain) => chain.tokenApiSlug)
+  .map((chain) => chain.id);
+
+function tokenApiSlug(chainId) {
+  const chain = SUPPORTED_CHAINS[chainId];
+  if (!chain?.tokenApiSlug) throw new Error(`Unsupported Ankr Token API chain: ${chainId}`);
+  return chain.tokenApiSlug;
+}
 
 const TOKEN_REGISTRY = [
   {
@@ -1076,6 +1280,83 @@ const TOKEN_REGISTRY = [
     decimals: 18,
     address: "0x55d398326f99059fF775485246999027B3197955",
   },
+  {
+    chain: "ethereum",
+    symbol: "USDT",
+    name: "Tether USD",
+    decimals: 6,
+    address: "0xdAC17F958D2ee523a2206206994597C13D831ec7",
+  },
+  {
+    chain: "polygon",
+    symbol: "USDT",
+    name: "Tether USD",
+    decimals: 6,
+    address: "0xc2132D05D31c914a87C6611C10748AEb04B58e8F",
+  },
+  {
+    chain: "base",
+    symbol: "USDC",
+    name: "USD Coin",
+    decimals: 6,
+    address: "0x833589fCD6eDb6E08f4c7C32D4f71b54bdA02913",
+  },
+  {
+    chain: "arbitrum",
+    symbol: "USDC",
+    name: "USD Coin",
+    decimals: 6,
+    address: "0xaf88d065e77c8cC2239327C5EDb3A432268e5831",
+  },
+  {
+    chain: "optimism",
+    symbol: "USDC",
+    name: "USD Coin",
+    decimals: 6,
+    address: "0x0b2C639c533813f4Aa9D7837CAf62653d097Ff85",
+  },
+  {
+    chain: "avalanche",
+    symbol: "USDC",
+    name: "USD Coin",
+    decimals: 6,
+    address: "0xB97EF9Ef8734C71904D8002F8b6Bc66Dd9c48a6E",
+  },
+  {
+    chain: "ethereum",
+    symbol: "DAI",
+    name: "Dai Stablecoin",
+    decimals: 18,
+    address: "0x6B175474E89094C44Da98b954EedeAC495271d0F",
+  },
+  {
+    chain: "ethereum",
+    symbol: "WBTC",
+    name: "Wrapped Bitcoin",
+    decimals: 8,
+    address: "0x2260FAC5E5542a773Aa44fBCfeDf7C193bc2C599",
+  },
+  {
+    chain: "ethereum",
+    symbol: "LINK",
+    name: "Chainlink",
+    decimals: 18,
+    address: "0x514910771AF9Ca656af840dff83E8264EcF986CA",
+  },
+  {
+    chain: "ethereum",
+    symbol: "UNI",
+    name: "Uniswap",
+    decimals: 18,
+    address: "0x1f9840a85d5aF5bf1D1762F925BDADdC4201F984",
+  },
+  {
+    chain: "ethereum",
+    symbol: "AAVE",
+    name: "Aave",
+    decimals: 18,
+    address: "0x7Fc66500c84A76Ad7e9c93437bFc5Ac33E2DDaE9",
+  },
 ];
 
 function buildAnkrUrl(chainId, token = "") {
@@ -1085,6 +1366,11 @@ function buildAnkrUrl(chainId, token = "") {
   }
   const suffix = token ? `/${token}` : "";
   return `https://rpc.ankr.com/${chain.ankrSlug}${suffix}`;
+}
+
+function buildAnkrMultichainUrl(token = "") {
+  const suffix = token ? `/${token}` : "";
+  return `https://rpc.ankr.com/multichain${suffix}`;
 }
 
 
@@ -1170,6 +1456,19 @@ class AnkrRpcClient {
     return buildAnkrUrl(chainId, this.apiToken);
   }
 
+  multichainEndpoint() {
+    if (this.endpoints.multichain) return this.endpoints.multichain;
+    return buildAnkrMultichainUrl(this.apiToken);
+  }
+
+  assertEvmChain(chainId, method) {
+    const chain = SUPPORTED_CHAINS[chainId];
+    if (!chain) throw new Error(`Unsupported Ankr chain: ${chainId}`);
+    if (chain.rpcFamily !== "evm") {
+      throw new Error(`${method} requires an EVM Ankr RPC chain. ${chain.label} uses ${chain.rpcFamily}.`);
+    }
+  }
+
   async call(chainId, method, params = []) {
     if (!SUPPORTED_CHAINS[chainId]) {
       throw new Error(`Unsupported Ankr chain: ${chainId}`);
@@ -1198,11 +1497,13 @@ class AnkrRpcClient {
   }
 
   async getLatestBlock(chainId) {
+    this.assertEvmChain(chainId, "eth_blockNumber");
     const result = await this.call(chainId, "eth_blockNumber");
     return Number.parseInt(result, 16);
   }
 
   async getNativeBalance(chainId, address, block = "latest") {
+    this.assertEvmChain(chainId, "eth_getBalance");
     const [balanceHex, latestBlock] = await Promise.all([
       this.call(chainId, "eth_getBalance", [address, block]),
       this.getLatestBlock(chainId),
@@ -1218,6 +1519,7 @@ class AnkrRpcClient {
   }
 
   async getErc20Balance(chainId, tokenAddress, walletAddress, decimals = 18) {
+    this.assertEvmChain(chainId, "eth_call");
     const data = `${BALANCE_OF_SELECTOR}${padAddress(walletAddress)}`;
     const result = await this.call(chainId, "eth_call", [{ to: tokenAddress, data }, "latest"]);
     const rawBalance = BigInt(result).toString();
@@ -1231,16 +1533,67 @@ class AnkrRpcClient {
   }
 
   async getTransactionByHash(chainId, txHash) {
+    this.assertEvmChain(chainId, "eth_getTransactionByHash");
     return this.call(chainId, "eth_getTransactionByHash", [txHash]);
   }
 
   async getTransactionReceipt(chainId, txHash) {
+    this.assertEvmChain(chainId, "eth_getTransactionReceipt");
     return this.call(chainId, "eth_getTransactionReceipt", [txHash]);
   }
 
   async getBlockByNumber(chainId, blockNumber, fullTransactions = true) {
+    this.assertEvmChain(chainId, "eth_getBlockByNumber");
     const hexBlock = `0x${Number(blockNumber).toString(16)}`;
     return this.call(chainId, "eth_getBlockByNumber", [hexBlock, fullTransactions]);
+  }
+
+  async advancedCall(method, params = {}) {
+    const response = await fetch(this.multichainEndpoint(), {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({
+        jsonrpc: "2.0",
+        id: this.requestId++,
+        method,
+        params,
+      }),
+    });
+
+    if (!response.ok) {
+      throw new Error(`Ankr multichain HTTP ${response.status} for ${method}`);
+    }
+
+    const payload = await response.json();
+    if (payload.error) {
+      throw new Error(payload.error.message || `Ankr multichain error for ${method}`);
+    }
+    return payload.result;
+  }
+
+  async getAccountBalance({
+    walletAddress,
+    blockchain = [],
+    onlyWhitelisted = false,
+    pageSize = 100,
+    pageToken = "",
+  }) {
+    const chains = blockchain.length ? blockchain.map((chainId) => tokenApiSlug(chainId)) : undefined;
+    return this.advancedCall("ankr_getAccountBalance", {
+      walletAddress,
+      ...(chains ? { blockchain: chains } : {}),
+      onlyWhitelisted,
+      pageSize,
+      pageToken,
+    });
+  }
+
+  async getTokenPrice({ blockchain, contractAddress, symbol }) {
+    return this.advancedCall("ankr_getTokenPrice", {
+      blockchain: tokenApiSlug(blockchain),
+      ...(contractAddress ? { contractAddress } : {}),
+      ...(symbol ? { symbol } : {}),
+    });
   }
 }
 
@@ -1292,8 +1645,8 @@ function createLocalPendingTransaction({ userId, walletId, chain, from, to, amou
     amountUsd,
     amountNative,
     direction: "outgoing",
-    source: "LOCAL",
-    status: "pending_local",
+    source: "local",
+    status: "pending",
     confirmations: 0,
     firstSeenAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -1302,7 +1655,7 @@ function createLocalPendingTransaction({ userId, walletId, chain, from, to, amou
 
 function createMempoolIncomingTransaction({ userId, walletId, chain, from, to, amountUsd, amountNative, txHash }) {
   return {
-    id: `mempool-${crypto.randomUUID()}`,
+    id: `incoming-${crypto.randomUUID()}`,
     txHash,
     userId,
     walletId,
@@ -1312,8 +1665,8 @@ function createMempoolIncomingTransaction({ userId, walletId, chain, from, to, a
     amountUsd,
     amountNative,
     direction: "incoming",
-    source: "MEMPOOL",
-    status: "pending_mempool",
+    source: "chain_scan",
+    status: "pending",
     confirmations: 0,
     firstSeenAt: new Date().toISOString(),
     updatedAt: new Date().toISOString(),
@@ -1343,7 +1696,7 @@ function updatePendingTransaction(transaction, lookupResult) {
 
   return {
     ...transaction,
-    status: transaction.source === "MEMPOOL" ? "pending_mempool" : "pending_local",
+    status: "pending",
     confirmations: lookupResult.confirmations,
     updatedAt: now,
   };
@@ -1366,8 +1719,8 @@ async function scanIncomingNativeTransfers({ rpc, chainId, blockNumber, watchedA
       to: tx.to,
       amountNativeWei: BigInt(tx.value || "0x0").toString(),
       blockNumber,
-      status: "pending_mempool",
-      source: "MEMPOOL",
+      status: "pending",
+      source: "chain_scan",
       direction: "incoming",
     });
   }
@@ -1746,7 +2099,7 @@ function createRpc(config) {
   return new AnkrRpcClient({ apiToken: config.ankrApiToken });
 }
 
-async function fetchNativeBalances({ rpc, address, chains = Object.keys(SUPPORTED_CHAINS) }) {
+async function fetchNativeBalances({ rpc, address, chains = EVM_CHAIN_IDS }) {
   const settled = await Promise.allSettled(
     chains.map((chainId) => rpc.getNativeBalance(chainId, address)),
   );
@@ -1768,13 +2121,31 @@ async function fetchNativeBalances({ rpc, address, chains = Object.keys(SUPPORTE
   });
 }
 
-async function fetchRegisteredTokenBalances({ rpc, address }) {
+async function fetchRegisteredTokenBalances({ rpc, address, enabledNetworkKeys = null }) {
+  const tokenKeyAliases = {
+    AAVE: "aave",
+    DAI: "dai",
+    LINK: "chainlink",
+    UNI: "uniswap",
+    USDC: "usd-coin",
+    USDT: "tether",
+    WBTC: "wrapped-bitcoin",
+  };
+  const registry = enabledNetworkKeys
+    ? TOKEN_REGISTRY.filter((token) => {
+        const symbolKey = token.symbol.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        const nameKey = token.name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "");
+        const aliases = [tokenKeyAliases[token.symbol], symbolKey, nameKey].filter(Boolean);
+        return aliases.some((alias) => enabledNetworkKeys.has(`${alias}:${token.chain}`));
+      })
+    : TOKEN_REGISTRY;
+
   const settled = await Promise.allSettled(
-    TOKEN_REGISTRY.map((token) => rpc.getErc20Balance(token.chain, token.address, address, token.decimals)),
+    registry.map((token) => rpc.getErc20Balance(token.chain, token.address, address, token.decimals)),
   );
 
   return settled.map((result, index) => {
-    const token = TOKEN_REGISTRY[index];
+    const token = registry[index];
     if (result.status === "fulfilled") {
       return {
         ...token,
@@ -1791,8 +2162,71 @@ async function fetchRegisteredTokenBalances({ rpc, address }) {
   });
 }
 
+function normalizeAnkrBalanceItem(item) {
+  const balanceUsd = Number(item.balanceUsd ?? item.balanceUSD ?? item.usdBalance ?? 0);
+  return {
+    chain: item.blockchain || item.chain || "",
+    symbol: item.tokenSymbol || item.symbol || item.contractTickerSymbol || "",
+    name: item.tokenName || item.name || "",
+    contractAddress: item.contractAddress || item.tokenAddress || "",
+    balance: item.balance || item.tokenBalance || "0",
+    balanceRaw: item.balanceRawInteger || item.rawBalance || item.balanceRaw || "",
+    balanceUsd: Number.isFinite(balanceUsd) ? balanceUsd : 0,
+    tokenPrice: Number(item.tokenPrice ?? item.price ?? 0) || 0,
+    thumbnail: item.thumbnail || item.logoURI || "",
+  };
+}
+
+function normalizeAnkrAccountBalance(payload) {
+  const assets = Array.isArray(payload?.assets) ? payload.assets : [];
+  const totalUsd = Number(payload?.totalBalanceUsd ?? payload?.totalBalanceUSD ?? payload?.totalUsd ?? 0);
+  return {
+    totalUsd: Number.isFinite(totalUsd) ? totalUsd : 0,
+    nextPageToken: payload?.nextPageToken || "",
+    assets: assets.map(normalizeAnkrBalanceItem),
+  };
+}
+
+async function fetchAnkrAccountPortfolio({
+  rpc,
+  address,
+  chains = TOKEN_API_CHAIN_IDS,
+  onlyWhitelisted = false,
+  pageSize = 100,
+}) {
+  const pages = [];
+  let pageToken = "";
+  do {
+    const payload = await rpc.getAccountBalance({
+      walletAddress: address,
+      blockchain: chains,
+      onlyWhitelisted,
+      pageSize,
+      pageToken,
+    });
+    const page = normalizeAnkrAccountBalance(payload);
+    pages.push(page);
+    pageToken = page.nextPageToken;
+  } while (pageToken);
+
+  return {
+    totalUsd: pages.reduce((total, page) => total + page.totalUsd, 0),
+    assets: pages.flatMap((page) => page.assets),
+  };
+}
+
+async function fetchLiveWalletSnapshot({ rpc, address, chains = TOKEN_API_CHAIN_IDS }) {
+  const portfolio = await fetchAnkrAccountPortfolio({ rpc, address, chains });
+  return {
+    address,
+    totalUsd: portfolio.totalUsd || portfolio.assets.reduce((total, asset) => total + asset.balanceUsd, 0),
+    assets: portfolio.assets,
+    updatedAt: new Date().toISOString(),
+  };
+}
+
 async function checkAnkrHealth({ rpc }) {
-  const chainIds = Object.keys(SUPPORTED_CHAINS);
+  const chainIds = EVM_CHAIN_IDS;
   const started = Date.now();
   const settled = await Promise.allSettled(chainIds.map((chainId) => rpc.getLatestBlock(chainId)));
   return settled.map((result, index) => {
@@ -1888,7 +2322,7 @@ const ADMIN_UI_SPEC_JSON = {
 const SYSTEM_ARCHITECTURE = {
   frontend: {
     wallet: "Mobile-first SPA matching the uploaded Exodus-style screenshots.",
-    admin: "Separate desktop ops dashboard for users, wallets, transactions, RPC health, mempool, and indexers.",
+    admin: "Separate desktop ops dashboard for users, wallets, transactions, RPC health, pending transfers, and indexers.",
   },
   backend: {
     api: ["RpcService", "BalanceService", "TransactionLookupService", "PendingTxTracker", "BlockScanner", "VaultService"],
@@ -2089,8 +2523,8 @@ const transactions = [
     amountUsd: 64.75,
     amountNative: "0.0414 ETH",
     direction: "outgoing",
-    source: "LOCAL",
-    status: "pending_local",
+    source: "local",
+    status: "pending",
     confirmations: 0,
     firstSeenAt: "2026-06-25T21:22:12.000Z",
   },
@@ -2105,8 +2539,8 @@ const transactions = [
     amountUsd: 128.9,
     amountNative: "0.0825 ETH",
     direction: "incoming",
-    source: "MEMPOOL",
-    status: "pending_mempool",
+    source: "chain_scan",
+    status: "pending",
     confirmations: 0,
     firstSeenAt: "2026-06-25T21:22:26.000Z",
   },
@@ -2193,6 +2627,7 @@ const state = {
   connectedChainId: "",
   liveBalances: [],
   tokenBalances: [],
+  livePortfolio: null,
   liveStatus: "Ready",
   liveError: "",
   persistenceStatus: "Not synced",
@@ -2268,7 +2703,23 @@ function rpcClient() {
   return createRpc(state.runtimeConfig);
 }
 
+const EXACT_ASSETS = (typeof window !== "undefined" && window.EXX_EXACT_ASSETS) || {};
+
+function tokenAsset(token) {
+  if (!token) return "";
+  const candidates = [token.assetKey, token.id, token.symbol].filter(Boolean);
+  for (const candidate of candidates) {
+    const key = String(candidate).toLowerCase();
+    if (EXACT_ASSETS[key]) return EXACT_ASSETS[key];
+  }
+  return "";
+}
+
 function tokenIcon(token, extraClass = "") {
+  const src = tokenAsset(token);
+  if (src) {
+    return `<span class="token-icon has-image ${extraClass}" style="--token:${token.color}"><img src="${src}" alt="${token.symbol}" /></span>`;
+  }
   return `<span class="token-icon ${extraClass}" style="--token:${token.color}">${token.symbol.slice(0, 1)}</span>`;
 }
 
@@ -2451,7 +2902,7 @@ function renderSendScreen() {
       ${tokenIcon(token, "large")}
       <label>Recipient <input id="send-to" value="0xc41d21F18bD6932Aa0f7f6C16D00FD8A0270A621" /></label>
       <label>Amount <input id="send-amount" value="0.0414" /></label>
-      <button class="primary-flow" data-action="${canSendLive ? "send-live" : "simulate-send"}">${canSendLive ? "Send with browser wallet" : "Create pending transaction"}</button>
+      <button class="primary-flow" data-action="${canSendLive ? "send-live" : "simulate-send"}">${canSendLive ? "Send with browser wallet" : "Send"}</button>
       <p class="flow-note">${canSendLive ? "The wallet extension signs and broadcasts; this app never receives the private key." : "Connect a browser wallet to broadcast. Without one, this creates a local pending record for testing."}</p>
     </section>
   `;
@@ -2473,8 +2924,8 @@ function renderReceiveScreen() {
         ${Array.from({ length: 49 }).map((_, index) => `<span class="${(index * 7 + index) % 5 < 2 ? "on" : ""}"></span>`).join("")}
       </div>
       <code>${address}</code>
-      <button class="primary-flow" data-action="simulate-incoming">Simulate mempool incoming</button>
-      <p class="flow-note">Incoming Ethereum transfers enter as PENDING (MEMPOOL), then become CONFIRMED after receipt polling.</p>
+      <button class="primary-flow" data-action="simulate-incoming">Receive</button>
+      <p class="flow-note">Incoming transfers show as Pending, then become Received after confirmation.</p>
     </section>
   `;
 }
@@ -2641,7 +3092,7 @@ function renderAdminOverview() {
     <div class="admin-grid">
       ${renderMetric("Users", state.users.length, "2 active")}
       ${renderMetric("Active Wallets", getWallets().filter((wallet) => wallet.status === "active").length, "AES vault checked")}
-      ${renderMetric("Pending Tx", state.transactions.filter((tx) => tx.status.includes("pending")).length, "local + mempool")}
+      ${renderMetric("Pending Tx", state.transactions.filter((tx) => tx.status.includes("pending")).length, "waiting confirmation")}
       ${renderMetric("RPC p95", `${Math.max(...state.systemStatus.map((chain) => chain.latencyMs))}ms`, "Ankr only")}
     </div>
     <div class="admin-panels">
@@ -2815,7 +3266,7 @@ function renderMempoolView() {
     <div class="admin-grid">
       ${renderMetric("Pending Queue", pending.length, "Ethereum priority")}
       ${renderMetric("Median Delay", `${42 + state.syncTick * 3}s`, "block polling")}
-      ${renderMetric("P95 Delay", `${118 + state.syncTick * 4}s`, "mempool watch")}
+      ${renderMetric("P95 Delay", `${118 + state.syncTick * 4}s`, "incoming watch")}
     </div>
     <section class="ops-panel full">
       <h2>Mempool Delay Monitor</h2>
@@ -2950,13 +3401,32 @@ function saveConfigFromForm() {
   render();
 }
 
-function updateTokenBalancesFromLive(nativeBalances) {
+function updateTokenBalancesFromLive(nativeBalances, snapshot = null) {
   const priceByChain = {
     ethereum: tokens.find((token) => token.id === "ethereum")?.priceUsd || 0,
     bsc: tokens.find((token) => token.id === "bsc")?.priceUsd || 0,
   };
+  const liveBySymbol = new Map();
+  for (const asset of snapshot?.assets || []) {
+    const symbol = asset.symbol?.toUpperCase();
+    if (!symbol) continue;
+    const previous = liveBySymbol.get(symbol);
+    if (!previous || asset.balanceUsd > previous.balanceUsd) liveBySymbol.set(symbol, asset);
+  }
 
   const nextTokens = tokens.map((token) => {
+    const liveAsset = liveBySymbol.get(token.symbol.toUpperCase());
+    if (liveAsset) {
+      const balance = Number(liveAsset.balance);
+      const priceUsd = liveAsset.tokenPrice || token.priceUsd;
+      const valueUsd = liveAsset.balanceUsd || (Number.isFinite(balance) ? balance * priceUsd : token.valueUsd);
+      return {
+        ...token,
+        priceUsd,
+        balance: Number.isFinite(balance) ? balance : token.balance,
+        valueUsd,
+      };
+    }
     if (token.id === "ethereum") {
       const balance = nativeBalances.find((entry) => entry.chain === "ethereum" && entry.ok);
       if (!balance) return token;
@@ -2995,8 +3465,15 @@ async function syncLiveBalances() {
       fetchRegisteredTokenBalances({ rpc, address }),
       checkAnkrHealth({ rpc }),
     ]);
+    let snapshot = null;
+    try {
+      snapshot = await fetchLiveWalletSnapshot({ rpc, address });
+    } catch (snapshotError) {
+      state.liveError = `Portfolio snapshot unavailable: ${snapshotError.message}`;
+    }
     state.liveBalances = nativeBalances;
     state.tokenBalances = tokenBalances;
+    state.livePortfolio = snapshot;
     state.systemStatus = health.map((entry) => ({
       chain: entry.chain,
       status: entry.status,
@@ -3005,7 +3482,7 @@ async function syncLiveBalances() {
       latencyMs: entry.latencyMs,
       errors: entry.errors,
     }));
-    updateTokenBalancesFromLive(nativeBalances);
+    updateTokenBalancesFromLive(nativeBalances, snapshot);
     state.liveStatus = "Ankr sync complete";
     await trackAndScan();
     await persistState();
@@ -3134,8 +3611,8 @@ async function trackAndScan() {
         amountUsd: 0,
         amountNative: `${match.amountNativeWei} wei`,
         direction: "incoming",
-        source: "MEMPOOL",
-        status: "pending_mempool",
+        source: "chain_scan",
+        status: "pending",
         confirmations: 0,
         firstSeenAt: new Date().toISOString(),
       });
@@ -3199,7 +3676,7 @@ async function advanceRealtimeState() {
 
   state.transactions = state.transactions.map((tx) => {
     if (!tx.status.includes("pending")) return tx;
-    const confirmations = tx.confirmations + (tx.source === "MEMPOOL" ? 2 : 1);
+    const confirmations = tx.confirmations + (tx.source === "chain_scan" ? 2 : 1);
     if (confirmations >= 6) {
       return {
         ...tx,
