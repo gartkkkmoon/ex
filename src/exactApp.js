@@ -1061,17 +1061,15 @@ function exactLogoSvg(token) {
 }
 
 function exactIcon(token, className = "") {
-  if (token.id === "tether" || token.symbol === "USDT") {
-    const svg = exactLogoSvg(token);
+  // Prefer the brand-accurate, plate-free vector coin (glossy hex + official
+  // glyph). This matches the intended Exodus look and stays crisp at any size.
+  const svg = exactLogoSvg(token);
+  if (svg) {
     return `<span class="exact-token-icon has-vector ${className}" style="--coin:${token.color}">${svg}</span>`;
   }
   const src = exactAssets[token.assetKey || token.id];
   if (src) {
     return `<span class="exact-token-icon has-image ${className}" style="--coin:${token.color}"><img src="${src}" alt="" /></span>`;
-  }
-  const svg = exactLogoSvg(token);
-  if (svg) {
-    return `<span class="exact-token-icon has-vector ${className}" style="--coin:${token.color}">${svg}</span>`;
   }
   return `<span class="exact-token-icon ${className}" style="--coin:${token.color}">${token.icon}</span>`;
 }
@@ -1747,7 +1745,7 @@ function renderRealDetail() {
           ${exactIcon(token, "real-large-icon")}
           <h1>${token.detailPrice || token.price}</h1>
           <p>${token.name} <strong>${exactRangeChange(token)}</strong></p>
-          ${exactNetworks(token).length > 1 ? `<small class="real-detail-network">${network.label}</small>` : ""}
+          ${exactNetworks(token).length > 1 && network.label !== token.name ? `<small class="real-detail-network">${network.label}</small>` : ""}
         </section>
         <section class="real-chart-wrap">
           <svg viewBox="0 0 649 318" preserveAspectRatio="none">
