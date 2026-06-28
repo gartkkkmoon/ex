@@ -4976,47 +4976,19 @@ function exactRestoreRuntime() {
 
 // Ankr Advanced API (multichain) — public endpoint works without a key for light use,
 // and `/multichain/<token>` is used when a key is provided.
-const EXACT_ANKR_CHAINS = [
-  "eth", "polygon", "bsc", "arbitrum", "optimism", "base", "avalanche",
-  "fantom", "gnosis", "linea", "scroll", "flare", "syscoin", "xlayer",
-];
-
-function exactAnkrEndpoint() {
-  const token = String(exactRuntime.ankrToken || "").trim();
-  return token ? `https://rpc.ankr.com/multichain/${token}` : "https://rpc.ankr.com/multichain";
-}
-
+// Balances are fetched from our own serverless endpoint (/api/balances), which
+// holds the Ankr API key in a server env var (ANKR_API_KEY). The key is never
+// shipped to the browser.
 async function exactAnkrAccountBalance(address) {
-  const assets = [];
-  let totalUsd = 0;
-  let pageToken = "";
-  let requestId = 1;
-  do {
-    const response = await fetch(exactAnkrEndpoint(), {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({
-        jsonrpc: "2.0",
-        id: requestId++,
-        method: "ankr_getAccountBalance",
-        params: {
-          walletAddress: address,
-          blockchain: EXACT_ANKR_CHAINS,
-          onlyWhitelisted: true,
-          pageSize: 100,
-          pageToken,
-        },
-      }),
-    });
-    if (!response.ok) throw new Error(`Ankr HTTP ${response.status}`);
-    const payload = await response.json();
-    if (payload.error) throw new Error(payload.error.message || "Ankr request failed");
-    const result = payload.result || {};
-    totalUsd += Number(result.totalBalanceUsd || 0) || 0;
-    for (const item of result.assets || []) assets.push(item);
-    pageToken = result.nextPageToken || "";
-  } while (pageToken);
-  return { totalUsd, assets };
+  const response = await fetch(`/api/balances?address=${encodeURIComponent(address)}`, {
+    headers: { accept: "application/json" },
+  });
+  if (!response.ok) throw new Error(`Balance API HTTP ${response.status}`);
+  const data = await response.json();
+  return {
+    totalUsd: Number(data.totalUsd) || 0,
+    assets: Array.isArray(data.assets) ? data.assets : [],
+  };
 }
 
 function exactFormatAmount(amount) {
@@ -6026,8 +5998,6 @@ function renderRealRestore() {
         <textarea data-access-field="restorePhrase" placeholder="word 1  word 2  word 3 …">${exactState.restorePhrase}</textarea>
         <label class="real-field-label">Or a public address to watch <small>(optional)</small></label>
         <input class="real-text-input" data-access-field="restoreAddress" placeholder="0x…" value="${exactState.restoreAddress}" />
-        <label class="real-field-label">Ankr API key <small>(optional — improves reliability)</small></label>
-        <input class="real-text-input" data-runtime-field="ankrToken" placeholder="paste Ankr Advanced API key" value="${exactRuntime.ankrToken}" />
         <button class="real-primary-button" data-action="phrase-confirmed">Continue</button>
       </section>
       ${exactToast()}
@@ -6369,8 +6339,6 @@ function renderRealWalletCard() {
         <strong>${live ? exactFormatUsd(exactPortfolioValue()) : "Demo portfolio"}</strong>
       </div>
       <code>${live && exactRuntime.address ? exactRuntime.address : "No live wallet loaded"}</code>
-      <label class="real-field-label">Ankr API key <small>(optional)</small></label>
-      <input class="real-text-input" data-runtime-field="ankrToken" placeholder="paste Ankr Advanced API key" value="${exactRuntime.ankrToken}" />
       <div class="real-wallet-card-actions">
         ${live ? `<button data-action="sync-balances"${exactRuntime.loading ? " disabled" : ""}>${exactRuntime.loading ? "Syncing…" : "Refresh balances"}</button>` : ""}
         <button data-action="access-restore">${live ? "Restore another" : "Restore wallet"}</button>
@@ -6695,10 +6663,6 @@ exactRoot.addEventListener("input", (event) => {
   }
   if (event.target.matches("[data-access-field='restoreAddress']")) {
     exactState.restoreAddress = event.target.value;
-  }
-  if (event.target.matches("[data-runtime-field='ankrToken']")) {
-    exactRuntime.ankrToken = event.target.value.trim();
-    exactPersistRuntime();
   }
   if (event.target.matches("[data-action='asset-search']")) {
     exactState.assetSearch = event.target.value;
