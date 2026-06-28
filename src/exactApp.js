@@ -3,13 +3,17 @@ const exactAssets = window.EXX_EXACT_ASSETS || {};
 
 function exactDetectedDevice() {
   if (window.EXX_FORCED_DEVICE === "android" || window.EXX_FORCED_DEVICE === "ios") return window.EXX_FORCED_DEVICE;
+  try {
+    const saved = window.localStorage?.getItem("exx.exact.device");
+    if (saved === "android" || saved === "ios") return saved;
+  } catch {
+    /* storage unavailable */
+  }
   const nav = window.navigator || {};
   const userAgent = nav.userAgent || "";
-  const platform = nav.platform || "";
   if (/android/i.test(userAgent)) return "android";
   if (/iphone|ipad|ipod/i.test(userAgent)) return "ios";
-  if (/mac/i.test(platform) && nav.maxTouchPoints > 1) return "ios";
-  return "ios";
+  return "android"; // desktop/preview default — focused on Android for now
 }
 
 const exactTokens = [
@@ -2094,11 +2098,21 @@ function exactHomeIndicator() {
     : `<div class="exact-home-indicator android"><span class="nav-back">‹</span><span class="nav-home">○</span><span class="nav-recent">▢</span></div>`;
 }
 
+function exactDeviceSwitcher() {
+  return `
+    <div class="exact-switcher">
+      <button class="${exactState.device === "android" ? "active" : ""}" data-action="device" data-device="android">Android</button>
+      <button class="${exactState.device === "ios" ? "active" : ""}" data-action="device" data-device="ios">iPhone</button>
+    </div>
+  `;
+}
+
 function exactRender() {
   const phoneWidth = 649;
   const phoneHeight = 1280;
   const scale = exactScale(phoneWidth);
   exactRoot.innerHTML = `
+    ${exactDeviceSwitcher()}
     <div class="exact-stage" style="width:${Math.round(phoneWidth * scale)}px;height:${Math.round(phoneHeight * scale)}px">
       <div class="exact-scale exact-device-${exactState.device}" style="width:${phoneWidth}px;height:${phoneHeight}px;transform:scale(${scale})">
         ${renderExactMobileScreens()}
@@ -2293,6 +2307,14 @@ exactRoot.addEventListener("click", (event) => {
   if (target.dataset.action === "profile") exactState.screen = "profile";
   if (target.dataset.action === "settings") exactState.screen = "settings";
   if (target.dataset.action === "home") exactState.screen = "home";
+  if (target.dataset.action === "device") {
+    exactState.device = target.dataset.device === "ios" ? "ios" : "android";
+    try {
+      window.localStorage?.setItem("exx.exact.device", exactState.device);
+    } catch {
+      /* storage unavailable */
+    }
+  }
   exactRender();
 });
 
