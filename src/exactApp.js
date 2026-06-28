@@ -604,6 +604,7 @@ const EXACT_RUNTIME_KEY = "exx.exact.runtime.v1";
 const exactRuntime = {
   mode: "preview", // "preview" (placeholder demo data) | "live" (real Ankr balances)
   address: "",
+  btcAddress: "",
   ankrToken: "",
   unlocked: false,
   holdings: {}, // tokenId -> { amount: string, value: number }
@@ -677,6 +678,7 @@ function exactPersistRuntime() {
     window.localStorage?.setItem(EXACT_RUNTIME_KEY, JSON.stringify({
       mode: exactRuntime.mode,
       address: exactRuntime.address,
+      btcAddress: exactRuntime.btcAddress,
       ankrToken: exactRuntime.ankrToken,
       unlocked: exactRuntime.unlocked,
       holdings: exactRuntime.holdings,
@@ -701,12 +703,17 @@ function exactRestoreRuntime() {
   if (!saved || typeof saved !== "object") return;
   exactRuntime.mode = saved.mode === "live" ? "live" : "preview";
   exactRuntime.address = saved.address || "";
+  exactRuntime.btcAddress = saved.btcAddress || "";
   exactRuntime.ankrToken = saved.ankrToken || "";
   exactRuntime.unlocked = Boolean(saved.unlocked);
   exactRuntime.holdings = saved.holdings && typeof saved.holdings === "object" ? saved.holdings : {};
   exactRuntime.totalUsd = Number(saved.totalUsd) || 0;
   exactRuntime.pinSalt = saved.pinSalt || "";
   exactRuntime.pinHash = saved.pinHash || "";
+  if (exactRuntime.mode === "live") {
+    // Don't show demo activity in a restored live wallet.
+    exactState.transactions = [];
+  }
   if (exactRuntime.unlocked) {
     exactState.passwordSet = true;
     if (exactHasPin()) {
@@ -790,28 +797,89 @@ async function exactSyncLiveBalances() {
     exactPersistRuntime();
     exactRender();
   }
+  exactFetchPending();
+}
+
+// Pull unconfirmed (mempool) incoming transfers and reconcile them into the
+// activity list as pending receives. Confirmed/dropped ones fall out of the
+// feed and are removed automatically.
+async function exactFetchPending() {
+  if (!exactIsLive() || !exactRuntime.address) return;
+  let list = [];
+  try {
+    const params = new URLSearchParams({ address: exactRuntime.address });
+    if (exactRuntime.btcAddress) params.set("btc", exactRuntime.btcAddress);
+    const res = await fetch(`/api/pending?${params.toString()}`, { headers: { accept: "application/json" } });
+    if (!res.ok) return;
+    const data = await res.json();
+    list = Array.isArray(data.pending) ? data.pending : [];
+  } catch (error) {
+    console.error("[exx] pending fetch failed:", error);
+    return;
+  }
+  if (exactApplyPending(list)) exactRender();
+}
+
+function exactApplyPending(list) {
+  const feedHashes = new Set(list.map((item) => item && item.hash).filter(Boolean));
+  const before = exactState.transactions.length;
+  // Drop mempool entries that are no longer unconfirmed.
+  exactState.transactions = exactState.transactions.filter(
+    (tx) => !String(tx.id).startsWith("mempool-") || feedHashes.has(tx.hash),
+  );
+  const known = new Set(exactState.transactions.map((tx) => tx.hash));
+  for (const item of list) {
+    if (!item || !item.hash || known.has(item.hash)) continue;
+    const token = exactTokens.find((entry) => entry.id === item.token);
+    if (!token) continue;
+    const amountNum = Number(item.amount) || 0;
+    if (amountNum <= 0) continue;
+    exactState.transactions.unshift({
+      id: `mempool-${item.hash}`,
+      token: token.id,
+      network: item.network || token.id,
+      direction: "incoming",
+      status: "pending",
+      amount: `+${exactFormatAmount(amountNum)} ${token.symbol}`,
+      value: exactFormatUsd(amountNum * exactMoneyNumber(token.price)),
+      title: "Received",
+      day: "Pending",
+      time: "Pending",
+      address: exactReceiveAddress(token),
+      createdAt: Date.now(),
+      hash: item.hash,
+    });
+    known.add(item.hash);
+  }
+  return exactState.transactions.length !== before;
 }
 
 function exactEnterLiveWallet(address) {
   exactRuntime.mode = "live";
   exactRuntime.address = address;
+  exactRuntime.btcAddress = "";
   exactRuntime.unlocked = true;
   exactRuntime.holdings = {};
   exactRuntime.totalUsd = 0;
+  // A live wallet shows only its real activity (sends + mempool receives).
+  exactState.transactions = [];
   exactPersistRuntime();
 }
 
 function exactEnterPreviewWallet() {
   exactRuntime.mode = "preview";
+  exactRuntime.btcAddress = "";
   exactRuntime.unlocked = true;
   exactRuntime.error = "";
   exactRuntime.status = "";
+  exactState.transactions = exactInitialTransactions.map((transaction) => ({ ...transaction }));
   exactPersistRuntime();
 }
 
 function exactResetWallet() {
   exactRuntime.mode = "preview";
   exactRuntime.address = "";
+  exactRuntime.btcAddress = "";
   exactRuntime.unlocked = false;
   exactRuntime.holdings = {};
   exactRuntime.totalUsd = 0;
@@ -837,18 +905,32 @@ function exactResetWallet() {
   }
 }
 
+// Derive + store the native-segwit BTC address from a mnemonic, if we have one.
+function exactDeriveBtcAddress(mnemonic) {
+  const crypto = exactCrypto();
+  if (!crypto || !crypto.btcAddressFromMnemonic) return "";
+  try { return crypto.btcAddressFromMnemonic(mnemonic); } catch { return ""; }
+}
+
 // Finalize onboarding once a PIN is set (mirrors the old "Open wallet" step).
 function exactFinalizeOnboarding() {
+  let mnemonic = "";
   if (exactState.onboardingMode === "restore") {
     exactEnterLiveWallet(exactState.restoreResolvedAddress);
+    if (exactCrypto()?.validateMnemonic(exactState.restorePhrase)) mnemonic = exactState.restorePhrase.trim();
     exactState.toast = "Wallet restored";
   } else if (exactState.onboardingMode === "create") {
-    const address = exactResolveRestore(exactState.generatedMnemonic) || exactRandomEvmAddress();
+    mnemonic = exactState.generatedMnemonic;
+    const address = exactResolveRestore(mnemonic) || exactRandomEvmAddress();
     exactEnterLiveWallet(address);
     exactState.toast = "Wallet ready";
   } else {
     exactEnterPreviewWallet();
     exactState.toast = "Wallet ready";
+  }
+  if (mnemonic) {
+    exactRuntime.btcAddress = exactDeriveBtcAddress(mnemonic);
+    exactPersistRuntime();
   }
   exactState.passwordSet = true;
   exactState.locked = false;
@@ -1107,6 +1189,9 @@ function exactReceiveAddress(token = exactToken()) {
   const network = exactSelectedNetwork(token);
   if (exactIsLive() && exactRuntime.address && EXACT_EVM_NETWORK_IDS.has(network.id)) {
     return exactRuntime.address;
+  }
+  if (exactIsLive() && exactRuntime.btcAddress && network.id === "bitcoin") {
+    return exactRuntime.btcAddress;
   }
   return network.address || "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289";
 }
@@ -2715,5 +2800,12 @@ window.addEventListener?.("resize", exactRender);
 exactRestoreRuntime();
 exactRender();
 if (exactIsLive() && exactRuntime.unlocked && !exactState.locked) exactSyncLiveBalances();
+
+// Poll the mempool feed so pending receives appear without a manual refresh.
+if (typeof setInterval === "function") {
+  setInterval(() => {
+    if (exactIsLive() && exactRuntime.unlocked && !exactState.locked) exactFetchPending();
+  }, 30000);
+}
 
 window.EXX_EXACT_DEBUG = { exactState, exactTokens, exactIcon, exactRender, exactRuntime, exactSyncLiveBalances };

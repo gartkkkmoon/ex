@@ -7,7 +7,10 @@ import { wordlist } from "@scure/bip39/wordlists/english";
 import { HDKey } from "@scure/bip32";
 import { secp256k1 } from "@noble/curves/secp256k1";
 import { keccak_256 } from "@noble/hashes/sha3";
+import { sha256 } from "@noble/hashes/sha256";
+import { ripemd160 } from "@noble/hashes/ripemd160";
 import { bytesToHex } from "@noble/hashes/utils";
+import { bech32 } from "@scure/base";
 
 function toChecksumAddress(hexNo0x) {
   const addr = hexNo0x.toLowerCase();
@@ -28,12 +31,23 @@ function ethAddressFromMnemonic(mnemonic, index = 0) {
   return toChecksumAddress(bytesToHex(addrBytes));
 }
 
+// Native SegWit (P2WPKH, bc1...) BTC address — BIP84 m/84'/0'/0'/0/index.
+function btcAddressFromMnemonic(mnemonic, index = 0) {
+  const seed = mnemonicToSeedSync(String(mnemonic).trim());
+  const hd = HDKey.fromMasterSeed(seed);
+  const child = hd.derive(`m/84'/0'/0'/0/${index}`);
+  const pub = secp256k1.getPublicKey(child.privateKey, true); // compressed (33 bytes)
+  const program = ripemd160(sha256(pub)); // hash160
+  return bech32.encode("bc", [0, ...bech32.toWords(program)]); // witness v0
+}
+
 const api = {
   generateMnemonic: (words = 12) => genMnemonic(wordlist, words === 24 ? 256 : 128),
   validateMnemonic: (m) => {
     try { return valMnemonic(String(m || "").trim().replace(/\s+/g, " "), wordlist); } catch { return false; }
   },
   ethAddressFromMnemonic,
+  btcAddressFromMnemonic,
   toChecksumAddress: (a) => toChecksumAddress(String(a).replace(/^0x/, "").toLowerCase()),
 };
 
