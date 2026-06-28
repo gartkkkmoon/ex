@@ -2447,3 +2447,36 @@ button {
   font-size: 28px;
   font-weight: 720;
 }
+
+/* Pending reflection on the dashboard */
+.real-pending-strip {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 10px 22px;
+  margin: 16px auto 2px;
+  font-size: 22px;
+  font-weight: 650;
+}
+
+.real-pending-strip .in {
+  color: #57e0a6;
+}
+
+.real-pending-strip .out {
+  color: #ffce54;
+}
+
+.real-pending-pill {
+  font-style: normal;
+  font-size: 19px;
+  font-weight: 700;
+}
+
+.real-pending-pill.in {
+  color: #57e0a6;
+}
+
+.real-pending-pill.out {
+  color: #ffce54;
+}
