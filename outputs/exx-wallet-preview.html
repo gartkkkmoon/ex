@@ -56,6 +56,11 @@ button {
   transform-origin: top left;
 }
 
+.exact-frame {
+  width: 649px;
+  margin: 0 auto;
+}
+
 .exact-token-icon {
   display: grid;
   place-items: center;
@@ -101,7 +106,6 @@ button {
   position: relative;
   width: 649px;
   height: 1280px;
-  padding-top: 48px; /* status-bar safe area */
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(72, 74, 113, 0.74) 0%, rgba(31, 33, 59, 0.98) 32%, #15172a 100%);
@@ -1380,7 +1384,7 @@ button {
 .real-receive-back {
   position: absolute;
   z-index: 5;
-  top: 80px;
+  top: 38px;
   left: 28px;
   width: 72px;
   height: 72px;
@@ -1735,7 +1739,7 @@ button {
 .real-profile-back {
   position: absolute;
   z-index: 5;
-  top: 80px;
+  top: 38px;
   left: 28px;
   width: 72px;
   height: 72px;
@@ -1952,7 +1956,7 @@ button {
   position: absolute;
   left: 48px;
   right: 48px;
-  bottom: 28px;
+  bottom: 230px;
   z-index: 20;
   display: grid;
   place-items: center;
@@ -2220,6 +2224,42 @@ button {
   border-color: #fff;
   background: #fff;
   color: #1a1c2e;
+}
+
+/* send screen: token-denominated amount + live value + balance check */
+.real-send-amount label b {
+  font-size: 40px;
+  font-weight: 760;
+  color: rgba(232, 233, 246, 0.72);
+}
+
+.real-send-amount em {
+  font-style: normal;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.real-send-avail {
+  color: rgba(204, 208, 235, 0.6);
+}
+
+.real-send-warn {
+  color: #ff8d8d;
+}
+
+.real-send-submit.is-disabled {
+  filter: grayscale(0.55) brightness(0.7);
+  pointer-events: none;
+}
+
+.real-network-pill.static {
+  opacity: 0.85;
+}
+
+/* large token icons: make the icon tile read as a polished app icon */
+.real-large-icon.has-image,
+.real-receive-icon.has-image {
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.32);
 }
 
     </style>
@@ -2792,23 +2832,17 @@ const exactState = {
     "paypal-usd": "ethereum",
     "euro-coin": "ethereum",
   },
+  // Only major assets are enabled by default; everything else is added from
+  // the "Add More" / asset manager.
   enabledNetworkKeys: new Set([
     "bitcoin:bitcoin",
     "ethereum:ethereum",
     "tether:ethereum",
-    "usd-coin:base",
     "bnb:bsc",
-    "polygon:polygon",
-    "chainlink:ethereum",
-    "base-eth:base",
-    "avalanche:avalanche",
-    "xrp:xrp",
     "solana:solana",
-    "tron:tron",
+    "xrp:xrp",
+    "usd-coin:base",
     "dogecoin:dogecoin",
-    "uniswap:ethereum",
-    "aave:ethereum",
-    "stellar:stellar",
   ]),
   restorePhrase: "",
   restoreAddress: "",
@@ -2969,9 +3003,12 @@ async function exactSyncLiveBalances() {
     const data = await exactAnkrAccountBalance(exactRuntime.address);
     exactApplyLiveBalances(data);
     exactRuntime.status = `Synced ${exactShortHash(exactRuntime.address)}`;
+    exactRuntime.error = "";
   } catch (error) {
-    exactRuntime.error = error.message || "Balance sync failed";
-    exactRuntime.status = "Live sync failed — showing last known balances";
+    // Keep provider errors backend-only — never surfaced to the user.
+    console.error("[exx] Ankr balance sync failed:", error);
+    exactRuntime.error = "";
+    exactRuntime.status = `Live · ${exactShortHash(exactRuntime.address)}`;
   } finally {
     exactRuntime.loading = false;
     exactPersistRuntime();
@@ -3935,12 +3972,8 @@ function renderRealHome() {
   const segments = exactRingSegments();
   const isEmpty = !total || total <= 0;
   const statusLine = exactIsLive()
-    ? `<div class="real-live-status ${exactRuntime.error ? "error" : ""}">${
-        exactRuntime.loading
-          ? "Syncing balances…"
-          : exactRuntime.error
-            ? exactRuntime.error
-            : `Live · ${exactShortHash(exactRuntime.address)}`
+    ? `<div class="real-live-status">${
+        exactRuntime.loading ? "Syncing balances…" : `Live · ${exactShortHash(exactRuntime.address)}`
       }</div>`
     : "";
   return `
@@ -4007,7 +4040,7 @@ function renderRealDetail() {
           ${exactIcon(token, "real-large-icon")}
           <h1>${token.detailPrice || token.price}</h1>
           <p>${token.name} <strong>${exactRangeChange(token)}</strong></p>
-          <small class="real-detail-network">${network.label}</small>
+          ${exactNetworks(token).length > 1 ? `<small class="real-detail-network">${network.label}</small>` : ""}
         </section>
         <section class="real-chart-wrap">
           <svg viewBox="0 0 649 318" preserveAspectRatio="none">
@@ -4069,27 +4102,36 @@ function renderRealDetail() {
 function renderRealSend() {
   const token = exactToken();
   const network = exactSelectedNetwork(token);
+  const balanceNum = Number(String(exactTokenBalance(token)).replace(/,/g, "")) || 0;
+  const amountNum = Number(exactState.sendAmount) || 0;
+  const usdValue = amountNum * exactMoneyNumber(token.price);
+  const insufficient = amountNum > balanceNum;
+  const canSend = amountNum > 0 && !insufficient;
+  const remaining = Math.max(balanceNum - amountNum, 0);
   return `
     <main class="real-phone real-send exact-${exactState.device}" style="--asset:${token.color}">
-      ${realTopBar({ back: "detail", title: "1/3", right: `<button data-action="assets">▦</button>` })}
+      ${realTopBar({ back: "detail", title: `Send ${token.symbol}`, right: `<button data-action="assets">▦</button>` })}
       <section class="real-send-amount">
         <span>${network.tag} NETWORK</span>
-        <label>$<input data-send-field="amount" inputmode="decimal" value="${exactState.sendAmount}" autofocus /></label>
-        <p>${exactState.sendAmount || "0"} ${token.symbol} <button data-action="swap-unit">⇅</button></p>
+        <label><input data-send-field="amount" inputmode="decimal" value="${exactState.sendAmount}" placeholder="0" autofocus /><b>${token.symbol}</b></label>
+        <p>${exactFormatUsd(usdValue)}</p>
+        ${insufficient
+          ? `<em class="real-send-warn">Not enough ${token.symbol} · you have ${exactTokenBalance(token)}</em>`
+          : `<em class="real-send-avail">Available ${exactTokenBalance(token)} ${token.symbol}</em>`}
       </section>
       <section class="real-send-token">
         ${exactIcon(token)}
         <strong>${token.name}<small>${network.label} · ${exactTokenValue(token)}</small></strong>
-        <button data-action="max-send">All</button>
+        <button data-action="max-send">Max</button>
       </section>
       <section class="real-fee-card">
-        <span>Remaining <strong>$0 / 0 ${token.symbol}</strong></span>
-        <span>Max Network Fee <strong>$0.05 / 0.000029 ${exactNetworkFeeSymbol(token)}</strong></span>
+        <span>Remaining <strong>${exactFormatAmount(remaining)} ${token.symbol}</strong></span>
+        <span>Max Network Fee <strong>≈ 0.000029 ${exactNetworkFeeSymbol(token)}</strong></span>
       </section>
       <div class="real-keypad">
         ${["1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "0", "‹"].map((key) => `<button data-action="keypad" data-key="${key}">${key}</button>`).join("")}
       </div>
-      <button class="real-primary-button real-send-submit" data-action="send-submit">Send</button>
+      <button class="real-primary-button real-send-submit${canSend ? "" : " is-disabled"}" data-action="send-submit">${insufficient ? "Insufficient balance" : "Send"}</button>
       ${exactToast()}
     </main>
   `;
@@ -4104,7 +4146,9 @@ function renderRealReceive() {
       <button class="real-receive-back" data-action="back" aria-label="Back">‹</button>
       <section class="real-receive-card">
         <button class="real-handle" data-action="back" aria-label="Back"></button>
-        <button class="real-network-pill" data-action="manage-token" data-token="${token.id}">${exactNetworkBadge(network, "tiny")} ${network.tag} NETWORK⌄</button>
+        ${exactNetworks(token).length > 1
+          ? `<button class="real-network-pill" data-action="manage-token" data-token="${token.id}">${exactNetworkBadge(network, "tiny")} ${network.tag} NETWORK⌄</button>`
+          : `<span class="real-network-pill static">${exactNetworkBadge(network, "tiny")} ${network.tag} NETWORK</span>`}
         ${exactIcon(token, "real-receive-icon")}
         <div class="real-qr">
           ${exactQrSvg(address)}
@@ -4112,7 +4156,7 @@ function renderRealReceive() {
         <h1>Your ${token.name} Address</h1>
         <button class="real-address" data-action="copy-address"><code>${address}</code><strong>⧉</strong></button>
         <p>Receive ${token.symbol} on the ${network.label} network.</p>
-        <button class="real-primary-button" data-action="share-address">Share</button>
+        <button class="real-primary-button" data-action="copy-address">Copy address</button>
       </section>
       ${exactToast()}
     </main>
@@ -4235,11 +4279,7 @@ function renderRealProfile() {
 
 function renderRealWalletCard() {
   const live = exactIsLive();
-  const statusLine = exactRuntime.error
-    ? `<small class="real-wallet-error">${exactRuntime.error}</small>`
-    : exactRuntime.status
-      ? `<small>${exactRuntime.status}</small>`
-      : "";
+  const statusLine = exactRuntime.status ? `<small>${exactRuntime.status}</small>` : "";
   return `
     <section class="real-wallet-card">
       <div class="real-wallet-card-head">
@@ -4320,37 +4360,6 @@ function renderExactMobileScreens() {
   return renderRealMobileScreens();
 }
 
-function exactStatusBar() {
-  const ios = exactState.device !== "android";
-  const icons = `
-    <svg class="exact-sb-icons" width="118" height="24" viewBox="0 0 118 24" fill="#fff" aria-hidden="true">
-      <rect x="0" y="14" width="5.5" height="9" rx="1.4"></rect>
-      <rect x="8.5" y="10" width="5.5" height="13" rx="1.4"></rect>
-      <rect x="17" y="6" width="5.5" height="17" rx="1.4"></rect>
-      <rect x="25.5" y="1.5" width="5.5" height="21.5" rx="1.4"></rect>
-      <path d="M44.5 7.6c5.4-4.8 14.6-4.8 20 0l-2.7 3c-3.9-3.4-10.7-3.4-14.6 0z"></path>
-      <path d="M49.2 12.4c2.9-2.5 7.7-2.5 10.6 0l-2.7 3c-1.5-1.2-3.7-1.2-5.2 0z"></path>
-      <circle cx="54.5" cy="20" r="2.5"></circle>
-      <rect x="86" y="4" width="27" height="16" rx="4.5" fill="none" stroke="#fff" stroke-opacity="0.55" stroke-width="2"></rect>
-      <rect x="88.5" y="6.5" width="19" height="11" rx="2"></rect>
-      <rect x="114.5" y="9" width="2.6" height="6" rx="1.2" fill="#fff" fill-opacity="0.55"></rect>
-    </svg>`;
-  return `
-    <div class="exact-statusbar ${ios ? "ios" : "android"}">
-      <span class="exact-sb-time">9:41</span>
-      ${ios ? `<span class="exact-sb-notch"></span>` : `<span class="exact-sb-punch"></span>`}
-      <span class="exact-sb-right">${icons}</span>
-    </div>
-  `;
-}
-
-function exactHomeIndicator() {
-  const ios = exactState.device !== "android";
-  return ios
-    ? `<div class="exact-home-indicator ios"><span></span></div>`
-    : `<div class="exact-home-indicator android"><span class="nav-back">‹</span><span class="nav-home">○</span><span class="nav-recent">▢</span></div>`;
-}
-
 function exactDeviceSwitcher() {
   return `
     <div class="exact-switcher">
@@ -4362,16 +4371,13 @@ function exactDeviceSwitcher() {
 
 function exactRender() {
   const phoneWidth = 649;
-  const phoneHeight = 1280;
   const scale = exactScale(phoneWidth);
+  // `zoom` (not transform:scale) keeps the scaled canvas in normal document
+  // flow, so inner scroll areas scroll natively/smoothly and nothing is clipped.
   exactRoot.innerHTML = `
     ${exactDeviceSwitcher()}
-    <div class="exact-stage" style="width:${Math.round(phoneWidth * scale)}px;height:${Math.round(phoneHeight * scale)}px">
-      <div class="exact-scale exact-device-${exactState.device}" style="width:${phoneWidth}px;height:${phoneHeight}px;transform:scale(${scale})">
-        ${renderExactMobileScreens()}
-        ${exactStatusBar()}
-        ${exactHomeIndicator()}
-      </div>
+    <div class="exact-frame exact-device-${exactState.device}" style="zoom:${scale}">
+      ${renderExactMobileScreens()}
     </div>
   `;
 }
@@ -4501,9 +4507,6 @@ exactRoot.addEventListener("click", (event) => {
   if (target.dataset.action === "max-send") {
     exactState.sendAmount = exactTokenBalance(exactToken()).replace(/,/g, "");
   }
-  if (target.dataset.action === "swap-unit") {
-    exactState.toast = "Amount display switched";
-  }
   if (target.dataset.action === "keypad") {
     const key = target.dataset.key;
     if (key === "‹") exactState.sendAmount = exactState.sendAmount.slice(0, -1);
@@ -4520,6 +4523,12 @@ exactRoot.addEventListener("click", (event) => {
     const numericAmount = Number(amount);
     if (!Number.isFinite(numericAmount) || numericAmount <= 0) {
       exactState.toast = "Enter an amount";
+      exactRender();
+      return;
+    }
+    const balanceNum = Number(String(exactTokenBalance(token)).replace(/,/g, "")) || 0;
+    if (numericAmount > balanceNum) {
+      exactState.toast = `Not enough ${token.symbol} to send`;
       exactRender();
       return;
     }
@@ -4541,10 +4550,13 @@ exactRoot.addEventListener("click", (event) => {
     exactState.toast = "Transaction added as Pending";
   }
   if (target.dataset.action === "copy-address") {
+    const address = exactReceiveAddress(exactToken());
+    try {
+      navigator.clipboard?.writeText(address);
+    } catch {
+      /* clipboard unavailable */
+    }
     exactState.toast = "Address copied";
-  }
-  if (target.dataset.action === "share-address") {
-    exactState.toast = "Share sheet ready";
   }
   if (target.dataset.action === "detail") exactState.screen = "detail";
   if (target.dataset.action === "send") exactState.screen = "send";

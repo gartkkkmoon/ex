@@ -48,6 +48,11 @@ button {
   transform-origin: top left;
 }
 
+.exact-frame {
+  width: 649px;
+  margin: 0 auto;
+}
+
 .exact-token-icon {
   display: grid;
   place-items: center;
@@ -93,7 +98,6 @@ button {
   position: relative;
   width: 649px;
   height: 1280px;
-  padding-top: 48px; /* status-bar safe area */
   overflow: hidden;
   background:
     linear-gradient(180deg, rgba(72, 74, 113, 0.74) 0%, rgba(31, 33, 59, 0.98) 32%, #15172a 100%);
@@ -1372,7 +1376,7 @@ button {
 .real-receive-back {
   position: absolute;
   z-index: 5;
-  top: 80px;
+  top: 38px;
   left: 28px;
   width: 72px;
   height: 72px;
@@ -1727,7 +1731,7 @@ button {
 .real-profile-back {
   position: absolute;
   z-index: 5;
-  top: 80px;
+  top: 38px;
   left: 28px;
   width: 72px;
   height: 72px;
@@ -1944,7 +1948,7 @@ button {
   position: absolute;
   left: 48px;
   right: 48px;
-  bottom: 28px;
+  bottom: 230px;
   z-index: 20;
   display: grid;
   place-items: center;
@@ -2212,4 +2216,40 @@ button {
   border-color: #fff;
   background: #fff;
   color: #1a1c2e;
+}
+
+/* send screen: token-denominated amount + live value + balance check */
+.real-send-amount label b {
+  font-size: 40px;
+  font-weight: 760;
+  color: rgba(232, 233, 246, 0.72);
+}
+
+.real-send-amount em {
+  font-style: normal;
+  font-size: 24px;
+  font-weight: 700;
+}
+
+.real-send-avail {
+  color: rgba(204, 208, 235, 0.6);
+}
+
+.real-send-warn {
+  color: #ff8d8d;
+}
+
+.real-send-submit.is-disabled {
+  filter: grayscale(0.55) brightness(0.7);
+  pointer-events: none;
+}
+
+.real-network-pill.static {
+  opacity: 0.85;
+}
+
+/* large token icons: make the icon tile read as a polished app icon */
+.real-large-icon.has-image,
+.real-receive-icon.has-image {
+  box-shadow: 0 18px 30px rgba(0, 0, 0, 0.32);
 }
