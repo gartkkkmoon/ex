@@ -7,15 +7,29 @@
 
 async function solBalance(address) {
   const key = process.env.ANKR_API_KEY || "";
-  const endpoint = key ? `https://rpc.ankr.com/solana/${key}` : "https://rpc.ankr.com/solana";
-  const r = await fetch(endpoint, {
-    method: "POST",
-    headers: { "content-type": "application/json" },
-    body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getBalance", params: [address] }),
-  });
-  const data = await r.json();
-  const lamports = data && data.result && data.result.value;
-  return Number(lamports || 0) / 1e9;
+  // Try several endpoints so a key/endpoint issue can't silently zero the balance.
+  const endpoints = [];
+  if (key) endpoints.push(`https://rpc.ankr.com/solana/${key}`);
+  endpoints.push("https://rpc.ankr.com/solana");
+  endpoints.push("https://solana-rpc.publicnode.com");
+  endpoints.push("https://api.mainnet-beta.solana.com");
+  let lastErr = "no endpoint";
+  for (const endpoint of endpoints) {
+    try {
+      const r = await fetch(endpoint, {
+        method: "POST",
+        headers: { "content-type": "application/json" },
+        body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "getBalance", params: [address] }),
+      });
+      if (!r.ok) { lastErr = `HTTP ${r.status}`; continue; }
+      const data = await r.json();
+      if (data && data.result && typeof data.result.value === "number") return data.result.value / 1e9;
+      lastErr = (data && data.error && data.error.message) || "no result";
+    } catch (error) {
+      lastErr = (error && error.message) || "fetch error";
+    }
+  }
+  throw new Error(`solana: ${lastErr}`);
 }
 
 async function btcLikeBalance(base, address) {

@@ -5501,6 +5501,19 @@ function exactDeriveAllAddresses(mnemonic) {
   exactRuntime.ltcAddress = tryDerive(crypto.ltcAddressFromMnemonic);
 }
 
+// Self-heal: wallets created before multi-chain support won't have SOL/XRP/TRX/
+// DOGE/LTC addresses persisted. After unlock (when we can decrypt the seed),
+// derive any that are missing so balances and receives work.
+async function exactEnsureChainAddresses(pin) {
+  if (!exactHasEncryptedSeed()) return;
+  const fields = ["btcAddress", "solAddress", "xrpAddress", "trxAddress", "dogeAddress", "ltcAddress"];
+  if (fields.every((f) => exactRuntime[f])) return; // all present
+  const mnemonic = await exactDecryptSeed(pin);
+  if (!mnemonic) return;
+  exactDeriveAllAddresses(mnemonic);
+  exactPersistRuntime();
+}
+
 // Finalize onboarding once a PIN is set (mirrors the old "Open wallet" step).
 // When a PIN is supplied and we hold the recovery phrase, the seed is encrypted
 // under the PIN so real sends can be signed later.
@@ -5677,7 +5690,10 @@ async function exactHandlePinComplete() {
     exactState.pinMode = "";
     exactState.screen = "home";
     exactRender();
-    if (exactIsLive() && exactRuntime.unlocked) exactSyncLiveBalances();
+    if (exactIsLive() && exactRuntime.unlocked) {
+      await exactEnsureChainAddresses(entry);
+      exactSyncLiveBalances();
+    }
     return;
   }
   if (exactState.pinMode === "send") {
