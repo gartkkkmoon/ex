@@ -868,6 +868,7 @@ async function exactFetchHistory() {
   if (exactRuntime.ltcAddress) params.set("ltc", exactRuntime.ltcAddress);
   if (exactRuntime.xrpAddress) params.set("xrp", exactRuntime.xrpAddress);
   if (exactRuntime.trxAddress) params.set("trx", exactRuntime.trxAddress);
+  if (exactRuntime.solAddress) params.set("sol", exactRuntime.solAddress);
   if (!Array.from(params).length) return;
   let list = [];
   try {
@@ -3311,7 +3312,10 @@ exactRoot.addEventListener("click", (event) => {
   if (target.dataset.action === "add-note") {
     exactState.toast = "Notes are stored locally — coming soon";
   }
-  if (target.dataset.action === "detail") exactState.screen = "detail";
+  if (target.dataset.action === "detail") {
+    exactState.screen = "detail";
+    if (exactIsLive()) exactFetchHistory();
+  }
   if (target.dataset.action === "send") exactState.screen = "send";
   if (target.dataset.action === "receive") exactState.screen = "receive";
   if (target.dataset.action === "assets") {
