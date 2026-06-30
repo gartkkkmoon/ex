@@ -180,6 +180,44 @@ async function tronHistory(address, out, dbg) {
   } catch (error) { dbg.TRXErr = error && error.message; console.error("[api/history] tron:", error && error.message); }
 }
 
+// Dogecoin via Blockchair: list of recent tx hashes for the address, then
+// per-tx input/output detail to compute the net amount at our address (same
+// shape of work as esploraHistory, just a different provider/response shape
+// since Dogecoin isn't covered by mempool.space-style explorers).
+async function dogeHistory(address, out, dbg) {
+  try {
+    const listing = await fetchJson(`https://api.blockchair.com/dogecoin/dashboards/address/${encodeURIComponent(address)}?limit=20`, { headers: { accept: "application/json" } });
+    const hashes = (listing && listing.data && listing.data[address] && listing.data[address].transactions) || [];
+    const details = await Promise.allSettled(hashes.slice(0, 15).map((hash) =>
+      fetchJson(`https://api.blockchair.com/dogecoin/dashboards/transaction/${hash}`, { headers: { accept: "application/json" } }),
+    ));
+    let n = 0;
+    for (let i = 0; i < details.length; i += 1) {
+      const result = details[i];
+      if (result.status !== "fulfilled") continue;
+      const hash = hashes[i];
+      const entry = result.value && result.value.data && result.value.data[hash];
+      if (!entry) continue;
+      let incoming = 0, outgoing = 0;
+      for (const out_ of entry.outputs || []) if (out_.recipient === address) incoming += Number(out_.value) || 0;
+      for (const in_ of entry.inputs || []) if (in_.recipient === address) outgoing += Number(in_.value) || 0;
+      const net = incoming - outgoing;
+      if (net === 0) continue;
+      const timeStr = entry.transaction && entry.transaction.time;
+      const timestamp = timeStr ? Date.parse(`${timeStr.replace(" ", "T")}Z`) : Date.now();
+      pushEntry(out, {
+        symbol: "DOGE", network: "dogecoin",
+        direction: net > 0 ? "incoming" : "outgoing",
+        amount: Math.abs(net) / 1e8,
+        hash,
+        timestamp: Number.isFinite(timestamp) ? timestamp : Date.now(),
+      });
+      n += 1;
+    }
+    dbg.DOGE = n;
+  } catch (error) { dbg.DOGEErr = error && error.message; console.error("[api/history] doge:", error && error.message); }
+}
+
 async function solRpc(method, params) {
   const key = process.env.ANKR_API_KEY || "";
   const endpoints = [];
@@ -238,6 +276,7 @@ export default async function handler(req, res) {
   if (/^0x[0-9a-fA-F]{40}$/.test(evm)) jobs.push(evmHistory(evm, out, dbg));
   if (q.btc) jobs.push(esploraHistory("https://mempool.space", String(q.btc).trim(), "BTC", "bitcoin", out, dbg));
   if (q.ltc) jobs.push(esploraHistory("https://litecoinspace.org", String(q.ltc).trim(), "LTC", "litecoin", out, dbg));
+  if (q.doge) jobs.push(dogeHistory(String(q.doge).trim(), out, dbg));
   if (q.xrp) jobs.push(xrpHistory(String(q.xrp).trim(), out, dbg));
   if (q.trx) jobs.push(tronHistory(String(q.trx).trim(), out, dbg));
   if (q.sol) jobs.push(solHistory(String(q.sol).trim(), out, dbg));
