@@ -5746,6 +5746,31 @@ function exactRecordSentTx({ token, networkId, amount, to, hash, fee }) {
   return tx;
 }
 
+// A send that never made it on-chain at all (signing error, broadcast
+// rejected — bad nonce, insufficient gas, RPC error, etc.). There's no txid,
+// but the attempt is still recorded as Failed with the amount so it doesn't
+// just vanish behind a toast.
+function exactRecordFailedSend({ token, networkId, amount, to }) {
+  const now = Date.now();
+  const tx = {
+    id: `failed-${now}-${Math.random().toString(16).slice(2)}`,
+    token: token.id,
+    network: networkId,
+    direction: "outgoing",
+    status: "failed",
+    amount: `-${amount} ${token.symbol}`,
+    value: exactFormatUsd((Number(amount) || 0) * exactTokenPriceNumber(token)),
+    address: to,
+    title: "Sent",
+    day: exactHistoryDay(now),
+    time: exactHistoryTime(now),
+    createdAt: now,
+    hash: "",
+  };
+  exactState.transactions.unshift(tx);
+  return tx;
+}
+
 // Shared "broadcast → record → show details" flow for any real send (EVM/UTXO).
 async function exactBroadcastAndRecord(senderFn, { token, network, pending }) {
   exactState.pendingSend = null;
@@ -5769,8 +5794,10 @@ async function exactBroadcastAndRecord(senderFn, { token, network, pending }) {
   } catch (error) {
     console.error("[exx] send failed:", error);
     exactRuntime.loading = false;
-    exactState.screen = "send";
-    exactState.toast = "Couldn't send — check the amount, fee and network";
+    const tx = exactRecordFailedSend({ token, networkId: network.id, amount: pending.amount, to: pending.to });
+    exactState.selectedTx = tx.id;
+    exactState.screen = "txdetail";
+    exactState.toast = "Transaction failed";
     exactRender();
   }
 }
@@ -7462,9 +7489,9 @@ function renderRealTxDetail() {
       ${realTopBar({ back: "detail", title: "TRANSACTION DETAILS", right: `<button data-action="copy-txid">⧉</button>` })}
       <div class="real-scroll">
         ${pending ? `<section class="real-txd-card status"><span>Status</span><strong class="pending">● Pending confirmation</strong></section>` : ""}
-        ${failed ? `<section class="real-txd-card status"><span>Status</span><strong class="failed">✕ Failed — did not confirm</strong></section>` : ""}
+        ${failed ? `<section class="real-txd-card status"><span>Status</span><strong class="failed">✕ ${tx.hash ? "Failed — did not confirm" : "Failed to send"}</strong></section>` : ""}
         ${card(titleWord, `${amountClean}${tx.value ? `<small>${tx.value}</small>` : ""}`, "amount")}
-        ${outgoing ? card("Fee", tx.fee || `≈ 0.000029 ${exactNetworkFeeSymbol(token)}`) : ""}
+        ${outgoing && !(failed && !tx.hash) ? card("Fee", tx.fee || `≈ 0.000029 ${exactNetworkFeeSymbol(token)}`) : ""}
         <section class="real-txd-card">
           <span>Personal Note</span>
           <button class="real-txd-note" data-action="add-note">Add Note</button>
