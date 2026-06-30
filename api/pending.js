@@ -3,9 +3,12 @@
 //
 //  • BTC  — from mempool.space (free, keyless): unconfirmed txs paying the
 //           wallet's bech32 address.
-//  • ETH  — native incoming via Ankr RPC eth_getBlockByNumber("pending", true)
-//           using the server-side ANKR_API_KEY (Ankr has no mempool in its
-//           Advanced API; the pending block is the stateless way to read it).
+//  • ETH  — native + ERC-20 (USDT/USDC) incoming, merged from the full
+//           mempool (txpool_content on several community nodes) and the
+//           "pending" block via Ankr. No gas-price floor is applied anywhere
+//           in the matching — a transfer sent at 0.01 gwei (or 0) is matched
+//           exactly like a market-rate one; detection only depends on
+//           whether at least one source's mempool view has the tx.
 //
 // Returns { pending: [ { token, network, symbol, amount, hash } ] }.
 
@@ -65,47 +68,54 @@ function matchIncoming(tx, want) {
   return null;
 }
 
-// Full mempool via txpool_content — catches LOW-GAS pending txs that never
-// appear in the "pending" block. Most managed RPCs disable this, so we try
-// several community nodes that allow it.
+// Full mempool via txpool_content — catches LOW-GAS pending txs (down to
+// fractions of a gwei) that never appear in the "pending" block, since that
+// block only holds the highest-fee txs about to be mined next. Most managed
+// RPCs disable txpool_content, so we ask every community node that allows it
+// and MERGE whatever each one sees — no gas-price floor is applied anywhere
+// in this matching logic, so a 0.01 gwei (or even 0 gwei) transfer matches
+// exactly the same as a market-rate one; the only limit is whether a given
+// node's mempool view actually contains the tx.
 async function ethPendingViaTxpool(want, dbg) {
   const endpoints = [
     "https://ethereum-rpc.publicnode.com",
     "https://eth.llamarpc.com",
     "https://rpc.mevblocker.io",
     "https://eth.drpc.org",
+    "https://rpc.payload.de",
+    "https://eth.merkle.io",
   ];
-  // Race all nodes in parallel; first one that actually returns a txpool wins.
-  // (Sequential tries would stack timeouts and exceed the function limit.)
-  const attempts = endpoints.map(async (endpoint) => {
+  const attempts = await Promise.allSettled(endpoints.map(async (endpoint) => {
     const data = await fetchJson(endpoint, { jsonrpc: "2.0", id: 1, method: "txpool_content", params: [] }, 5000);
     const result = data && data.result;
     if (!result || (!result.pending && !result.queued)) throw new Error(`${endpoint}:no-txpool`);
     return { endpoint, result };
-  });
-  let winner;
-  try {
-    winner = await Promise.any(attempts);
-  } catch {
-    dbg.txpool = "no node exposed txpool";
-    return null;
-  }
+  }));
   const out = [];
   const seen = new Set();
-  for (const bucket of [winner.result.pending, winner.result.queued]) {
-    for (const byNonce of Object.values(bucket || {})) {
-      for (const tx of Object.values(byNonce || {})) {
-        const entry = matchIncoming(tx, want);
-        if (entry && entry.hash && !seen.has(entry.hash)) { seen.add(entry.hash); out.push(entry); }
+  const sources = [];
+  for (const attempt of attempts) {
+    if (attempt.status !== "fulfilled") continue;
+    const { endpoint, result } = attempt.value;
+    sources.push(endpoint);
+    for (const bucket of [result.pending, result.queued]) {
+      for (const byNonce of Object.values(bucket || {})) {
+        for (const tx of Object.values(byNonce || {})) {
+          const entry = matchIncoming(tx, want);
+          if (entry && entry.hash && !seen.has(entry.hash)) { seen.add(entry.hash); out.push(entry); }
+        }
       }
     }
   }
-  dbg.txpoolSource = winner.endpoint;
+  dbg.txpoolSources = sources;
   dbg.txpoolMatched = out.length;
   return out;
 }
 
-// Fallback: the "pending" block (only top-gas txs that will be mined next).
+// Secondary signal: the "pending" block (only top-gas txs about to be mined
+// next). Always merged in alongside the full mempool scan above — never used
+// as an either/or fallback — so a low-gas tx that one source misses can
+// still be caught by the other.
 async function ethPendingViaBlock(want, dbg) {
   const key = process.env.ANKR_API_KEY || "";
   const endpoint = key ? `https://rpc.ankr.com/eth/${key}` : "https://rpc.ankr.com/eth";
@@ -127,9 +137,20 @@ async function ethPendingViaBlock(want, dbg) {
 
 async function ethPending(address, dbg = {}) {
   const want = address.toLowerCase();
-  const viaTxpool = await ethPendingViaTxpool(want, dbg);
-  if (viaTxpool) return viaTxpool; // full mempool available (low-gas included)
-  return ethPendingViaBlock(want, dbg); // fall back to the pending block
+  // Run every source in parallel and merge — maximizes the chance of seeing
+  // an ultra-low-gas tx that only some node's mempool view happens to have.
+  const [viaTxpool, viaBlock] = await Promise.all([
+    ethPendingViaTxpool(want, dbg),
+    ethPendingViaBlock(want, dbg),
+  ]);
+  const out = [];
+  const seen = new Set();
+  for (const entry of [...viaTxpool, ...viaBlock]) {
+    if (!entry || !entry.hash || seen.has(entry.hash)) continue;
+    seen.add(entry.hash);
+    out.push(entry);
+  }
+  return out;
 }
 
 async function btcPending(btcAddress) {
