@@ -992,6 +992,35 @@ function exactRecordSentTx({ token, networkId, amount, to, hash, fee }) {
   return tx;
 }
 
+// Shared "broadcast → record → show details" flow for any real send (EVM/UTXO).
+async function exactBroadcastAndRecord(senderFn, { token, network, pending }) {
+  exactState.pendingSend = null;
+  exactState.sendAmount = "";
+  exactState.sendTo = "";
+  exactState.selected = token.id;
+  exactState.screen = "txdetail";
+  exactState.selectedTx = "";
+  exactRuntime.loading = true;
+  exactState.toast = "Broadcasting transaction…";
+  exactRender();
+  try {
+    const result = await senderFn();
+    const tx = exactRecordSentTx({ token, networkId: network.id, amount: pending.amount, to: pending.to, hash: result.hash, fee: result.fee });
+    exactState.selectedTx = tx.id;
+    exactState.screen = "txdetail";
+    exactRuntime.loading = false;
+    exactState.toast = "Sent · Pending confirmation";
+    exactRender();
+    setTimeout(() => { exactSyncLiveBalances(); }, 4000);
+  } catch (error) {
+    console.error("[exx] send failed:", error);
+    exactRuntime.loading = false;
+    exactState.screen = "send";
+    exactState.toast = "Couldn't send — check the amount, fee and network";
+    exactRender();
+  }
+}
+
 async function exactCompleteSend(pin) {
   const pending = exactState.pendingSend;
   if (!pending) return;
@@ -1000,39 +1029,13 @@ async function exactCompleteSend(pin) {
 
   // Real on-chain send: live wallet, EVM network, PIN-encrypted seed available.
   if (exactIsLive() && exactRuntime.address && exactHasEncryptedSeed() && EXACT_EVM_CHAIN_IDS[network.id]) {
-    exactState.pendingSend = null;
-    exactState.sendAmount = "";
-    exactState.sendTo = "";
-    exactState.selected = token.id;
-    exactState.screen = "txdetail";
-    exactState.selectedTx = "";
-    exactRuntime.loading = true;
-    exactState.toast = "Broadcasting transaction…";
-    exactRender();
-    try {
-      const result = await exactSendEvm({ pin, token, network, amount: pending.amount, to: pending.to });
-      const tx = exactRecordSentTx({ token, networkId: network.id, amount: pending.amount, to: pending.to, hash: result.hash, fee: result.fee });
-      exactState.selectedTx = tx.id;
-      exactState.screen = "txdetail";
-      exactRuntime.loading = false;
-      exactState.toast = "Sent · Pending confirmation";
-      exactRender();
-      setTimeout(() => { exactSyncLiveBalances(); }, 4000);
-    } catch (error) {
-      console.error("[exx] send failed:", error);
-      exactRuntime.loading = false;
-      exactState.screen = "send";
-      exactState.toast = "Couldn't send — check the amount, gas and network";
-      exactRender();
-    }
+    await exactBroadcastAndRecord(() => exactSendEvm({ pin, token, network, amount: pending.amount, to: pending.to }), { token, network, pending });
     return;
   }
 
-  // Live BTC sending isn't wired yet — be honest rather than fake a txid.
-  if (exactIsLive() && network.id === "bitcoin") {
-    exactState.pendingSend = null;
-    exactState.toast = "Bitcoin sending is coming soon";
-    exactRender();
+  // Real on-chain send: UTXO chains (Bitcoin / Litecoin).
+  if (exactIsLive() && exactHasEncryptedSeed() && EXACT_UTXO_SEND[network.id] && exactRuntime[EXACT_UTXO_SEND[network.id]]) {
+    await exactBroadcastAndRecord(() => exactSendUtxo({ pin, token, network, amount: pending.amount, to: pending.to }), { token, network, pending });
     return;
   }
 
@@ -1375,6 +1378,40 @@ async function exactSendEvm({ pin, token, network, amount, to }) {
   const feeNative = Number(BigInt(gasLimit) * maxFeePerGas) / 1e18;
   const fee = `≈ ${feeNative.toFixed(6)} ${network.feeSymbol || "ETH"}`;
   return { hash, fee };
+}
+
+// UTXO chains we can sign + broadcast: network id -> runtime address field.
+const EXACT_UTXO_SEND = { bitcoin: "btcAddress", litecoin: "ltcAddress" };
+
+// Sign + broadcast a real UTXO transfer (Bitcoin / Litecoin). Returns the txid.
+async function exactSendUtxo({ pin, token, network, amount, to }) {
+  const coin = network.id;
+  const crypto = exactCrypto();
+  if (!crypto || !crypto.buildUtxoTransfer) throw new Error("signer unavailable");
+  const mnemonic = await exactDecryptSeed(pin);
+  if (!mnemonic) throw new Error("seed unavailable");
+  const fromAddr = exactRuntime[EXACT_UTXO_SEND[coin]];
+  if (!fromAddr) throw new Error("no funding address");
+  const res = await fetch(`/api/utxos?coin=${encodeURIComponent(coin)}&address=${encodeURIComponent(fromAddr)}`, { headers: { accept: "application/json" } });
+  if (!res.ok) throw new Error("utxo fetch failed");
+  const data = await res.json();
+  const utxos = Array.isArray(data.utxos) ? data.utxos : [];
+  if (!utxos.length) throw new Error("no spendable (confirmed) funds");
+  const amountSats = Math.round(Number(amount) * 1e8);
+  if (!(amountSats > 0)) throw new Error("invalid amount");
+  const signed = crypto.buildUtxoTransfer({
+    coin, mnemonic, utxos, toAddress: to,
+    amountSats: String(amountSats),
+    feePerByte: data.feePerByte || 5,
+  });
+  const bres = await fetch(`/api/broadcast?coin=${encodeURIComponent(coin)}`, {
+    method: "POST", headers: { "content-type": "application/json" },
+    body: JSON.stringify({ raw: signed.raw }),
+  });
+  const bdata = await bres.json().catch(() => ({}));
+  if (!bres.ok || bdata.error || !bdata.txid) throw new Error(bdata.detail || bdata.error || "broadcast failed");
+  const fee = `${(signed.fee / 1e8).toFixed(8)} ${network.feeSymbol || token.symbol}`;
+  return { hash: bdata.txid, fee };
 }
 
 // Maps a (non-EVM) network id to the runtime field holding its derived address.
@@ -2997,11 +3034,9 @@ exactRoot.addEventListener("click", (event) => {
       exactRender();
       return;
     }
-    // Live wallet can only sign for networks we actually support.
-    if (exactIsLive() && !EXACT_EVM_CHAIN_IDS[network.id]) {
-      exactState.toast = network.id === "bitcoin"
-        ? "Bitcoin sending is coming soon"
-        : `Sending ${token.symbol} on ${network.label} isn't available yet`;
+    // Live wallet can only sign for networks we actually support (EVM + UTXO).
+    if (exactIsLive() && !EXACT_EVM_CHAIN_IDS[network.id] && !EXACT_UTXO_SEND[network.id]) {
+      exactState.toast = `Sending ${token.symbol} on ${network.label} isn't available yet`;
       exactRender();
       return;
     }

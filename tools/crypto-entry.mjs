@@ -15,6 +15,7 @@ import { hmac } from "@noble/hashes/hmac";
 import { bytesToHex, hexToBytes as nobleHexToBytes } from "@noble/hashes/utils";
 import { bech32 } from "@scure/base";
 import qrcode from "qrcode-generator";
+import * as btc from "@scure/btc-signer";
 
 // Proper QR encoder (byte mode, error-correction level M, auto version).
 // Returns a square matrix of booleans (true = dark module) so the UI can draw a
@@ -246,6 +247,45 @@ function ltcAddressFromMnemonic(mnemonic) {
   return bech32.encode("ltc", [0, ...bech32.toWords(program)]);
 }
 
+// --- UTXO sending (Bitcoin / Litecoin / Dogecoin) ---------------------------
+// Uses @scure/btc-signer's audited coin-selection + fee + change so we never
+// hand-roll money-losing tx math. Returns { raw, txid, fee }.
+const UTXO_COINS = {
+  bitcoin: { path: "m/84'/0'/0'/0/0", segwit: true, network: btc.NETWORK },
+  litecoin: { path: "m/84'/2'/0'/0/0", segwit: true, network: { bech32: "ltc", pubKeyHash: 0x30, scriptHash: 0x32, wif: 0xb0 } },
+  dogecoin: { path: "m/44'/3'/0'/0/0", segwit: false, network: { bech32: "doge", pubKeyHash: 0x1e, scriptHash: 0x16, wif: 0x9e } },
+};
+
+function buildUtxoTransfer({ coin, mnemonic, utxos, toAddress, amountSats, feePerByte }) {
+  const cfg = UTXO_COINS[coin];
+  if (!cfg) throw new Error(`unsupported coin ${coin}`);
+  const seed = mnemonicToSeedSync(String(mnemonic).trim());
+  const child = HDKey.fromMasterSeed(seed).derive(cfg.path);
+  const priv = child.privateKey;
+  const pub = secp256k1.getPublicKey(priv, true);
+  const net = cfg.network;
+  const spend = cfg.segwit ? btc.p2wpkh(pub, net) : btc.p2pkh(pub, net);
+  const inputs = (utxos || []).map((u) => {
+    const input = { ...spend, txid: hexToBytes(u.txid), index: Number(u.vout) };
+    if (cfg.segwit) input.witnessUtxo = { script: spend.script, amount: BigInt(u.value) };
+    else input.nonWitnessUtxo = hexToBytes(u.prevTxHex);
+    return input;
+  });
+  const outputs = [{ address: String(toAddress), amount: BigInt(amountSats) }];
+  const selected = btc.selectUTXO(inputs, outputs, "default", {
+    changeAddress: spend.address,
+    feePerByte: BigInt(Math.max(1, Math.round(Number(feePerByte) || 1))),
+    bip69: true,
+    createTx: true,
+    network: net,
+  });
+  if (!selected || !selected.tx) throw new Error("insufficient funds for amount + fee");
+  const tx = selected.tx;
+  tx.sign(priv);
+  tx.finalize();
+  return { raw: bytesToHex(tx.extract()), txid: tx.id, fee: Number(selected.fee) };
+}
+
 const api = {
   generateMnemonic: (words = 12) => genMnemonic(wordlist, words === 24 ? 256 : 128),
   validateMnemonic: (m) => {
@@ -261,6 +301,7 @@ const api = {
   toChecksumAddress: (a) => toChecksumAddress(String(a).replace(/^0x/, "").toLowerCase()),
   buildEvmTransfer,
   erc20TransferData,
+  buildUtxoTransfer,
   qrMatrix,
 };
 
