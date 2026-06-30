@@ -1064,6 +1064,20 @@ html, body {
   padding: 76px 22px 0;
 }
 
+.real-activity-title {
+  font-size: 34px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.real-activity-empty {
+  padding: 80px 40px;
+  text-align: center;
+  opacity: 0.66;
+  font-size: 24px;
+  line-height: 1.55;
+}
+
 .real-history h2 {
   margin: 0 0 18px;
   border-bottom: 2px solid rgba(255, 255, 255, 0.055);
@@ -5320,6 +5334,7 @@ async function exactSyncLiveBalances() {
   }
   exactFetchChainBalances();
   exactFetchPending();
+  exactFetchHistory();
 }
 
 // Native balances for the non-EVM chains (BTC, SOL, XRP, LTC, DOGE, TRX),
@@ -5417,6 +5432,84 @@ function exactApplyPending(list) {
     known.add(item.hash);
   }
   return exactState.transactions.length !== before;
+}
+
+function exactHistoryDay(ms) {
+  if (!ms) return "Earlier";
+  const d = new Date(ms);
+  const now = new Date();
+  if (d.toDateString() === now.toDateString()) return "Today";
+  const yesterday = new Date(now);
+  yesterday.setDate(now.getDate() - 1);
+  if (d.toDateString() === yesterday.toDateString()) return "Yesterday";
+  return d.toLocaleDateString("en-US", { month: "short", day: "numeric", year: d.getFullYear() === now.getFullYear() ? undefined : "numeric" });
+}
+
+function exactHistoryTime(ms) {
+  if (!ms) return "";
+  return new Date(ms).toLocaleTimeString("en-US", { hour: "numeric", minute: "2-digit" });
+}
+
+// Pull the wallet's real confirmed on-chain history (all chains) and merge it
+// into the activity list, replacing any session/pending entries that have since
+// confirmed. Newest first.
+async function exactFetchHistory() {
+  if (!exactIsLive()) return;
+  const params = new URLSearchParams();
+  if (exactRuntime.address) params.set("evm", exactRuntime.address);
+  if (exactRuntime.btcAddress) params.set("btc", exactRuntime.btcAddress);
+  if (exactRuntime.ltcAddress) params.set("ltc", exactRuntime.ltcAddress);
+  if (exactRuntime.xrpAddress) params.set("xrp", exactRuntime.xrpAddress);
+  if (exactRuntime.trxAddress) params.set("trx", exactRuntime.trxAddress);
+  if (!Array.from(params).length) return;
+  let list = [];
+  try {
+    const res = await fetch(`/api/history?${params.toString()}`, { headers: { accept: "application/json" } });
+    if (!res.ok) return;
+    const data = await res.json();
+    list = Array.isArray(data.transactions) ? data.transactions : [];
+  } catch (error) {
+    console.error("[exx] history fetch failed:", error);
+    return;
+  }
+  if (exactMergeHistory(list)) exactRender();
+}
+
+function exactMergeHistory(list) {
+  const confirmed = new Set(list.map((item) => item && item.hash).filter(Boolean));
+  const before = JSON.stringify(exactState.transactions.map((t) => t.id));
+  // Drop prior history entries and any session/pending tx that has now confirmed.
+  exactState.transactions = exactState.transactions.filter(
+    (tx) => !String(tx.id).startsWith("history-") && !confirmed.has(tx.hash),
+  );
+  const known = new Set(exactState.transactions.map((tx) => tx.hash));
+  for (const item of list) {
+    if (!item || !item.hash || known.has(item.hash)) continue;
+    const token = exactTokens.find((entry) => entry.id === item.token);
+    if (!token) continue;
+    const amountNum = Number(item.amount) || 0;
+    if (amountNum <= 0) continue;
+    const incoming = item.direction === "incoming";
+    known.add(item.hash);
+    exactState.transactions.push({
+      id: `history-${item.hash}`,
+      token: token.id,
+      network: item.network || token.id,
+      direction: incoming ? "incoming" : "outgoing",
+      status: "confirmed",
+      amount: `${incoming ? "+" : "-"}${exactFormatAmount(amountNum)} ${token.symbol}`,
+      value: exactFormatUsd(amountNum * exactTokenPriceNumber(token)),
+      fee: incoming ? "" : undefined,
+      title: incoming ? "Received" : "Sent",
+      day: exactHistoryDay(item.timestamp),
+      time: exactHistoryTime(item.timestamp),
+      address: item.counterparty || exactReceiveAddress(token),
+      createdAt: item.timestamp || Date.now(),
+      hash: item.hash,
+    });
+  }
+  exactState.transactions.sort((a, b) => (b.createdAt || 0) - (a.createdAt || 0));
+  return JSON.stringify(exactState.transactions.map((t) => t.id)) !== before;
 }
 
 function exactClearChainAddresses() {
@@ -7074,9 +7167,48 @@ function renderRealHome() {
         </section>
       </div>
       <nav class="real-bottom-dock">
-        <button data-action="assets">▣</button>
-        <button data-action="detail" data-token="ethereum">⇄</button>
-        <button data-action="open-access">$</button>
+        <button data-action="assets" aria-label="Assets">▣</button>
+        <button data-action="activity" aria-label="Activity">⇄</button>
+        <button data-action="open-access" aria-label="More">$</button>
+      </nav>
+      ${exactToast()}
+    </main>
+  `;
+}
+
+// Global activity / transaction history across every token.
+function renderRealActivity() {
+  const groups = exactActivityGroups(exactState.transactions);
+  return `
+    <main class="real-phone real-detail exact-${exactState.device}">
+      <div class="real-scroll with-dock">
+        <header class="real-detail-top">
+          <button data-action="back" aria-label="Back">‹</button>
+          <strong class="real-activity-title">Activity</strong>
+          <button data-action="sync-balances" aria-label="Refresh">⟳</button>
+        </header>
+        <section class="real-history">
+          ${groups.length ? groups.map((group) => `
+            <div class="real-activity-group">
+              <h3>${group.day}</h3>
+              ${group.items.map((tx) => {
+                const visual = exactActivityVisual(tx);
+                const token = exactTokens.find((entry) => entry.id === tx.token);
+                return `
+                <button class="real-tx-row ${tx.direction} ${tx.status} ${visual.tone}" data-action="txdetail" data-tx="${tx.id}">
+                  <span class="real-tx-icon ${visual.tone}">${exactTransferArrow(visual.icon)}</span>
+                  <strong>${visual.label} ${token ? token.symbol : ""}<small>${tx.time || exactShortHash(tx.hash)}</small></strong>
+                  <em>${tx.amount}<small>${tx.value || ""}</small></em>
+                </button>`;
+              }).join("")}
+            </div>
+          `).join("") : `<p class="real-activity-empty">No transactions yet.<br/>Pull down to refresh once your wallet has activity.</p>`}
+        </section>
+      </div>
+      <nav class="real-bottom-dock">
+        <button data-action="home" aria-label="Wallet">▣</button>
+        <button class="active" data-action="activity" aria-label="Activity">⇄</button>
+        <button data-action="open-access" aria-label="More">$</button>
       </nav>
       ${exactToast()}
     </main>
@@ -7486,6 +7618,7 @@ function renderRealMobileScreens() {
   if (exactState.screen === "create") return renderRealCreate();
   if (exactState.screen === "confirm") return renderRealConfirm();
   if (exactState.screen === "restore") return renderRealRestore();
+  if (exactState.screen === "activity") return renderRealActivity();
   if (exactState.screen === "detail") return renderRealDetail();
   if (exactState.screen === "txdetail") return renderRealTxDetail();
   if (exactState.screen === "send") return renderRealSend();
@@ -7623,6 +7756,17 @@ exactRoot.addEventListener("click", (event) => {
   }
   if (target.dataset.action === "sync-balances") {
     exactSyncLiveBalances();
+    return;
+  }
+  if (target.dataset.action === "activity") {
+    exactState.screen = "activity";
+    exactRender();
+    if (exactIsLive()) exactFetchHistory();
+    return;
+  }
+  if (target.dataset.action === "home") {
+    exactState.screen = "home";
+    exactRender();
     return;
   }
   if (target.dataset.action === "switch-preview") {

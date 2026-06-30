@@ -1056,6 +1056,20 @@ html, body {
   padding: 76px 22px 0;
 }
 
+.real-activity-title {
+  font-size: 34px;
+  font-weight: 800;
+  color: #fff;
+}
+
+.real-activity-empty {
+  padding: 80px 40px;
+  text-align: center;
+  opacity: 0.66;
+  font-size: 24px;
+  line-height: 1.55;
+}
+
 .real-history h2 {
   margin: 0 0 18px;
   border-bottom: 2px solid rgba(255, 255, 255, 0.055);
