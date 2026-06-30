@@ -40,38 +40,92 @@ function decodeErc20Incoming(tx, want) {
   return { token: meta.token, network: "ethereum", symbol: meta.symbol, amount: String(amount), hash: tx.hash };
 }
 
-async function ethPending(address) {
+async function fetchJson(url, body, timeoutMs = 7000) {
+  const ctrl = new AbortController();
+  const timer = setTimeout(() => ctrl.abort(), timeoutMs);
+  try {
+    const r = await fetch(url, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body), signal: ctrl.signal });
+    return await r.json();
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+// Is this mempool tx an incoming native/ERC-20 transfer to `want`? (any gas)
+function matchIncoming(tx, want) {
+  if (!tx || !tx.to) return null;
+  const to = tx.to.toLowerCase();
+  if (to === want) {
+    let wei = 0n;
+    try { wei = BigInt(tx.value); } catch { wei = 0n; }
+    if (wei > 0n) return { token: "ethereum", network: "ethereum", symbol: "ETH", amount: String(Number(wei) / 1e18), hash: tx.hash };
+    return null;
+  }
+  if (ERC20[to]) return decodeErc20Incoming(tx, want);
+  return null;
+}
+
+// Full mempool via txpool_content — catches LOW-GAS pending txs that never
+// appear in the "pending" block. Most managed RPCs disable this, so we try
+// several community nodes that allow it.
+async function ethPendingViaTxpool(want, dbg) {
+  const endpoints = [
+    "https://ethereum-rpc.publicnode.com",
+    "https://eth.llamarpc.com",
+    "https://rpc.mevblocker.io",
+    "https://eth.drpc.org",
+  ];
+  for (const endpoint of endpoints) {
+    try {
+      const data = await fetchJson(endpoint, { jsonrpc: "2.0", id: 1, method: "txpool_content", params: [] }, 8000);
+      const result = data && data.result;
+      const buckets = result && (result.pending || result.queued) ? [result.pending, result.queued] : null;
+      if (!buckets) { dbg.txpool = (dbg.txpool || "") + `${endpoint}:no-txpool;`; continue; }
+      const out = [];
+      const seen = new Set();
+      for (const bucket of buckets) {
+        for (const byNonce of Object.values(bucket || {})) {
+          for (const tx of Object.values(byNonce || {})) {
+            const entry = matchIncoming(tx, want);
+            if (entry && entry.hash && !seen.has(entry.hash)) { seen.add(entry.hash); out.push(entry); }
+          }
+        }
+      }
+      dbg.txpoolSource = endpoint;
+      dbg.txpoolMatched = out.length;
+      return out; // a working txpool node — authoritative
+    } catch (error) {
+      dbg.txpool = (dbg.txpool || "") + `${endpoint}:${error && error.message};`;
+    }
+  }
+  return null; // no node exposed txpool
+}
+
+// Fallback: the "pending" block (only top-gas txs that will be mined next).
+async function ethPendingViaBlock(want, dbg) {
   const key = process.env.ANKR_API_KEY || "";
   const endpoint = key ? `https://rpc.ankr.com/eth/${key}` : "https://rpc.ankr.com/eth";
   const out = [];
   try {
-    const r = await fetch(endpoint, {
-      method: "POST",
-      headers: { "content-type": "application/json" },
-      body: JSON.stringify({ jsonrpc: "2.0", id: 1, method: "eth_getBlockByNumber", params: ["pending", true] }),
-    });
-    if (!r.ok) throw new Error(`Ankr HTTP ${r.status}`);
-    const payload = await r.json();
+    const payload = await fetchJson(endpoint, { jsonrpc: "2.0", id: 1, method: "eth_getBlockByNumber", params: ["pending", true] }, 8000);
     const txs = (payload.result && payload.result.transactions) || [];
-    const want = address.toLowerCase();
     for (const tx of txs) {
-      if (!tx || !tx.to) continue;
-      const to = tx.to.toLowerCase();
-      if (to === want) {
-        // native ETH
-        let wei = 0n;
-        try { wei = BigInt(tx.value); } catch { wei = 0n; }
-        if (wei > 0n) out.push({ token: "ethereum", network: "ethereum", symbol: "ETH", amount: String(Number(wei) / 1e18), hash: tx.hash });
-      } else if (ERC20[to]) {
-        // ERC-20 transfer (USDT / USDC) addressed to us
-        const decoded = decodeErc20Incoming(tx, want);
-        if (decoded) out.push(decoded);
-      }
+      const entry = matchIncoming(tx, want);
+      if (entry) out.push(entry);
     }
+    dbg.block = txs.length;
   } catch (error) {
-    console.error("[api/pending] eth:", error && error.message);
+    dbg.blockErr = error && error.message;
+    console.error("[api/pending] eth block:", error && error.message);
   }
   return out;
+}
+
+async function ethPending(address, dbg = {}) {
+  const want = address.toLowerCase();
+  const viaTxpool = await ethPendingViaTxpool(want, dbg);
+  if (viaTxpool) return viaTxpool; // full mempool available (low-gas included)
+  return ethPendingViaBlock(want, dbg); // fall back to the pending block
 }
 
 async function btcPending(btcAddress) {
@@ -106,10 +160,13 @@ export default async function handler(req, res) {
   const address = String((req.query && req.query.address) || "").trim();
   const btc = String((req.query && req.query.btc) || "").trim();
   const pending = [];
+  const dbg = {};
   const tasks = [];
-  if (/^0x[0-9a-fA-F]{40}$/.test(address)) tasks.push(ethPending(address).then((r) => pending.push(...r)));
+  if (/^0x[0-9a-fA-F]{40}$/.test(address)) tasks.push(ethPending(address, dbg).then((r) => pending.push(...r)));
   if (/^bc1[0-9a-z]{20,}$/.test(btc)) tasks.push(btcPending(btc).then((r) => pending.push(...r)));
   await Promise.allSettled(tasks);
   res.setHeader("cache-control", "s-maxage=10, stale-while-revalidate=20");
-  res.status(200).json({ pending });
+  const body = { pending };
+  if (req.query && req.query.debug) body.debug = dbg;
+  res.status(200).json(body);
 }
