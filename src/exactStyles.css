@@ -1143,6 +1143,11 @@ html, body {
   color: #f0c35f;
 }
 
+.real-tx-icon.failed {
+  background: rgba(239, 91, 109, 0.14);
+  color: #ef5b6d;
+}
+
 .real-tx-row strong,
 .real-tx-row em {
   display: grid;
@@ -2461,6 +2466,11 @@ html, body {
 
 .real-txd-card.status strong.pending {
   color: #ffce54;
+  font-size: 26px;
+}
+
+.real-txd-card.status strong.failed {
+  color: #ef5b6d;
   font-size: 26px;
 }
 

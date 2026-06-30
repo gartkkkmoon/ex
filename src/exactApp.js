@@ -454,7 +454,6 @@ const exactState = {
     "litecoin:litecoin",
   ]),
   restorePhrase: "",
-  restoreAddress: "",
   generatedMnemonic: "",
   restoreResolvedAddress: "",
   // PIN lock state
@@ -788,8 +787,8 @@ async function exactFetchChainBalances() {
 }
 
 // Pull unconfirmed (mempool) incoming transfers and reconcile them into the
-// activity list as pending receives. Confirmed/dropped ones fall out of the
-// feed and are removed automatically.
+// activity list as pending receives. Resolution (confirmed vs. failed) is
+// handled separately by exactFetchHistory / exactCheckPendingHealth.
 async function exactFetchPending() {
   if (!exactIsLive() || !exactRuntime.address) return;
   let list = [];
@@ -808,12 +807,11 @@ async function exactFetchPending() {
 }
 
 function exactApplyPending(list) {
-  const feedHashes = new Set(list.map((item) => item && item.hash).filter(Boolean));
   const before = exactState.transactions.length;
-  // Drop mempool entries that are no longer unconfirmed.
-  exactState.transactions = exactState.transactions.filter(
-    (tx) => !String(tx.id).startsWith("mempool-") || feedHashes.has(tx.hash),
-  );
+  // Entries that fall out of the live mempool feed are NOT deleted here —
+  // that would silently lose a transaction that either just confirmed (the
+  // history fetch will replace it) or actually failed/dropped (the pending
+  // health check below will mark it "Failed" instead of erasing it).
   const known = new Set(exactState.transactions.map((tx) => tx.hash));
   for (const item of list) {
     if (!item || !item.hash || known.has(item.hash)) continue;
@@ -920,6 +918,68 @@ function exactMergeHistory(list) {
   return JSON.stringify(exactState.transactions.map((t) => t.id)) !== before;
 }
 
+// How long a pending tx can go un-confirmed/un-found before we treat it as
+// failed/dropped rather than keep waiting (very rough, per-chain finality
+// expectations — generous on purpose to avoid false "Failed" labels).
+const EXACT_PENDING_STALE_MS = {
+  ethereum: 20 * 60 * 1000,
+  bsc: 20 * 60 * 1000,
+  polygon: 20 * 60 * 1000,
+  arbitrum: 20 * 60 * 1000,
+  optimism: 20 * 60 * 1000,
+  bitcoin: 60 * 60 * 1000,
+  litecoin: 30 * 60 * 1000,
+  dogecoin: 15 * 60 * 1000,
+  solana: 2 * 60 * 1000,
+  xrp: 2 * 60 * 1000,
+  tron: 3 * 60 * 1000,
+};
+
+function exactResolvePendingTx(tx, failed) {
+  tx.status = failed ? "failed" : "confirmed";
+  tx.day = exactHistoryDay(tx.createdAt);
+  tx.time = exactHistoryTime(tx.createdAt);
+}
+
+// Resolve any pending tx (our own sends or detected incoming receives) that
+// has either failed/reverted on-chain, or has been unconfirmed and unseen by
+// every provider for long enough that it's effectively dropped. Writes the
+// outcome straight into transaction history as "Failed" with the original
+// amount, instead of leaving it pending forever or letting it vanish.
+async function exactCheckPendingHealth() {
+  if (!exactIsLive()) return;
+  const now = Date.now();
+  const candidates = exactState.transactions.filter((tx) => tx.status === "pending"
+    && (String(tx.id).startsWith("sent-") || String(tx.id).startsWith("mempool-"))
+    && tx.hash && tx.network
+    && (now - (tx.createdAt || 0)) > 45000); // give a fresh broadcast time to propagate
+  if (!candidates.length) return;
+  let changed = false;
+  await Promise.all(candidates.map(async (tx) => {
+    let result;
+    try {
+      const res = await fetch(`/api/txstatus?network=${encodeURIComponent(tx.network)}&hash=${encodeURIComponent(tx.hash)}`, { headers: { accept: "application/json" } });
+      if (!res.ok) return;
+      result = await res.json();
+    } catch (error) {
+      console.error("[exx] txstatus failed:", error);
+      return;
+    }
+    if (!result) return;
+    if (result.found && result.confirmed) {
+      exactResolvePendingTx(tx, Boolean(result.failed));
+      changed = true;
+      return;
+    }
+    const staleMs = EXACT_PENDING_STALE_MS[tx.network] || 20 * 60 * 1000;
+    if (!result.found && (now - (tx.createdAt || 0)) > staleMs) {
+      exactResolvePendingTx(tx, true);
+      changed = true;
+    }
+  }));
+  if (changed) exactRender();
+}
+
 function exactClearChainAddresses() {
   exactRuntime.btcAddress = "";
   exactRuntime.solAddress = "";
@@ -964,7 +1024,6 @@ function exactResetWallet() {
   exactRuntime.pinHash = "";
   exactRuntime.encryptedSeed = null;
   exactState.passwordSet = false;
-  exactState.restoreAddress = "";
   exactState.restorePhrase = "";
   exactState.generatedMnemonic = "";
   exactState.locked = false;
@@ -2168,6 +2227,7 @@ function exactTokenTransactions(tokenId = exactState.selected) {
 
 function exactStatusLabel(status) {
   if (status === "pending") return "Pending";
+  if (status === "failed") return "Failed";
   if (status === "received") return "Received";
   if (status === "sent") return "Sent";
   return "Sent";
@@ -2355,11 +2415,19 @@ function exactChartLowLabel(token, points) {
 }
 
 function exactActivityLabel(tx) {
+  if (tx.status === "failed") return "Failed";
   if (tx.status === "pending") return "Pending";
   return tx.direction === "incoming" ? "Received" : "Sent";
 }
 
 function exactActivityVisual(tx) {
+  if (tx.status === "failed") {
+    return {
+      label: tx.direction === "incoming" ? "Receive failed" : "Send failed",
+      tone: "failed",
+      icon: "failed",
+    };
+  }
   if (tx.status === "pending") {
     return {
       label: "Pending",
@@ -2372,6 +2440,13 @@ function exactActivityVisual(tx) {
 }
 
 function exactTransferArrow(kind) {
+  if (kind === "failed") {
+    return `
+      <svg viewBox="0 0 48 48" aria-hidden="true">
+        <path d="M14 14 34 34M34 14 14 34" fill="none" stroke="currentColor" stroke-width="4.2" stroke-linecap="round" stroke-linejoin="round"></path>
+      </svg>
+    `;
+  }
   const path = kind === "receive"
     ? "M33 15 16 32M16 32h13M16 32V19"
     : "M15 33 32 16M32 16H19M32 16v13";
@@ -2439,7 +2514,6 @@ function renderRealAccess() {
           <span>Restore using your recovery phrase.</span>
         </button>
       </section>
-      <button class="real-secondary-wide" data-action="preview-wallet">Explore demo</button>
       ${exactToast()}
     </main>
   `;
@@ -2491,8 +2565,6 @@ function renderRealRestore() {
         <p>Enter your 12 or 24-word recovery phrase from any wallet. It stays on this device — only the derived public address is used to read balances.</p>
         <label class="real-field-label">Secret recovery phrase <small>(kept local, never sent)</small></label>
         <textarea data-access-field="restorePhrase" placeholder="word 1  word 2  word 3 …">${exactState.restorePhrase}</textarea>
-        <label class="real-field-label">Or a public address to watch <small>(optional)</small></label>
-        <input class="real-text-input" data-access-field="restoreAddress" placeholder="0x…" value="${exactState.restoreAddress}" />
         <button class="real-primary-button" data-action="phrase-confirmed">Continue</button>
       </section>
       ${exactToast()}
@@ -2769,7 +2841,12 @@ function renderRealTxDetail() {
   const token = exactTokens.find((item) => item.id === tx.token) || exactToken();
   const outgoing = tx.direction === "outgoing";
   const pending = tx.status === "pending";
-  const titleWord = pending ? (outgoing ? "Sending" : "Receiving") : (outgoing ? "Sent" : "Received");
+  const failed = tx.status === "failed";
+  const titleWord = failed
+    ? (outgoing ? "Send failed" : "Receive failed")
+    : pending
+      ? (outgoing ? "Sending" : "Receiving")
+      : (outgoing ? "Sent" : "Received");
   const amountClean = String(tx.amount || "").replace(/^[+-]/, "");
   const counterLabel = outgoing ? "Sent to" : "Received to";
   const counterAddress = tx.address || exactReceiveAddress(token);
@@ -2783,6 +2860,7 @@ function renderRealTxDetail() {
       ${realTopBar({ back: "detail", title: "TRANSACTION DETAILS", right: `<button data-action="copy-txid">⧉</button>` })}
       <div class="real-scroll">
         ${pending ? `<section class="real-txd-card status"><span>Status</span><strong class="pending">● Pending confirmation</strong></section>` : ""}
+        ${failed ? `<section class="real-txd-card status"><span>Status</span><strong class="failed">✕ Failed — did not confirm</strong></section>` : ""}
         ${card(titleWord, `${amountClean}${tx.value ? `<small>${tx.value}</small>` : ""}`, "amount")}
         ${outgoing ? card("Fee", tx.fee || `≈ 0.000029 ${exactNetworkFeeSymbol(token)}`) : ""}
         <section class="real-txd-card">
@@ -2957,26 +3035,6 @@ function renderRealProfile() {
   `;
 }
 
-function renderRealWalletCard() {
-  const live = exactIsLive();
-  const statusLine = exactRuntime.status ? `<small>${exactRuntime.status}</small>` : "";
-  return `
-    <section class="real-wallet-card">
-      <div class="real-wallet-card-head">
-        <span class="real-wallet-mode ${live ? "live" : "preview"}">${live ? "● Live" : "○ Demo"}</span>
-        <strong>${live ? exactFormatUsd(exactPortfolioValue()) : "Demo portfolio"}</strong>
-      </div>
-      <code>${live && exactRuntime.address ? exactRuntime.address : "No live wallet loaded"}</code>
-      <div class="real-wallet-card-actions">
-        ${live ? `<button data-action="sync-balances"${exactRuntime.loading ? " disabled" : ""}>${exactRuntime.loading ? "Syncing…" : "Refresh balances"}</button>` : ""}
-        <button data-action="access-restore">${live ? "Restore another" : "Restore wallet"}</button>
-        ${live ? `<button data-action="switch-preview">Demo</button>` : ""}
-      </div>
-      ${statusLine}
-    </section>
-  `;
-}
-
 function renderRealSettings() {
   const rows = [
     ["♡", "Help Improve Exodus", "›", ""],
@@ -2997,7 +3055,6 @@ function renderRealSettings() {
       <section class="real-settings-sheet">
         <button class="real-handle" data-action="back" aria-label="Back"></button>
         <h1>Settings</h1>
-        ${renderRealWalletCard()}
         <div class="real-settings-list">
           ${rows.map(([icon, label, arrow, type]) => `
             <button data-action="${actionFor[type] || "noop"}">
@@ -3098,9 +3155,9 @@ exactRoot.addEventListener("click", (event) => {
   if (target.dataset.action === "phrase-confirmed") {
     if (exactState.onboardingMode === "restore") {
       const phrase = exactState.restorePhrase.trim();
-      const address = exactResolveRestore(phrase || exactState.restoreAddress);
+      const address = exactResolveRestore(phrase);
       if (!address) {
-        exactState.toast = "Enter a valid recovery phrase or 0x address";
+        exactState.toast = "Enter a valid recovery phrase";
         exactRender();
         return;
       }
@@ -3120,10 +3177,6 @@ exactRoot.addEventListener("click", (event) => {
       }
     }
     exactStartPinSetup();
-  }
-  if (target.dataset.action === "preview-wallet") {
-    exactEnterPreviewWallet();
-    exactState.screen = "home";
   }
   if (target.dataset.action === "pin-key") {
     const key = target.dataset.key;
@@ -3176,10 +3229,6 @@ exactRoot.addEventListener("click", (event) => {
     exactState.screen = "home";
     exactRender();
     return;
-  }
-  if (target.dataset.action === "switch-preview") {
-    exactEnterPreviewWallet();
-    exactState.toast = "Showing demo portfolio";
   }
   if (target.dataset.action === "delete-wallet") {
     exactResetWallet();
@@ -3344,9 +3393,6 @@ exactRoot.addEventListener("input", (event) => {
   if (event.target.matches("[data-access-field='restorePhrase']")) {
     exactState.restorePhrase = event.target.value;
   }
-  if (event.target.matches("[data-access-field='restoreAddress']")) {
-    exactState.restoreAddress = event.target.value;
-  }
   if (event.target.matches("[data-action='asset-search']")) {
     exactState.assetSearch = event.target.value;
     exactState.collapsedAssets.clear();
@@ -3414,6 +3460,9 @@ if (typeof setInterval === "function") {
   // Confirmed balances + transaction history so the wallet stays current on
   // its own (this is why it didn't update automatically before).
   setInterval(() => { if (exactLiveActive()) { exactFetchChainBalances(); exactFetchHistory(); } }, 35000);
+  // Resolve stuck/dropped pending transactions to "Failed" instead of
+  // leaving them pending forever or letting them silently disappear.
+  setInterval(() => { if (exactLiveActive()) exactCheckPendingHealth(); }, 40000);
   setInterval(() => { exactFetchPrices(); }, 60000);
 }
 
