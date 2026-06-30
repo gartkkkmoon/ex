@@ -17,6 +17,7 @@
     "@scure/base": "^1",
     "@scure/bip32": "^1",
     "@scure/bip39": "^1",
-    "esbuild": "^0.25.0"
+    "esbuild": "^0.25.0",
+    "qrcode-generator": "^2.0.4"
   }
 }

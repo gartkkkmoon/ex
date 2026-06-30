@@ -14,6 +14,24 @@ import { ripemd160 } from "@noble/hashes/ripemd160";
 import { hmac } from "@noble/hashes/hmac";
 import { bytesToHex, hexToBytes as nobleHexToBytes } from "@noble/hashes/utils";
 import { bech32 } from "@scure/base";
+import qrcode from "qrcode-generator";
+
+// Proper QR encoder (byte mode, error-correction level M, auto version).
+// Returns a square matrix of booleans (true = dark module) so the UI can draw a
+// scannable SVG. Replaces the previous hand-rolled encoder.
+function qrMatrix(text) {
+  const qr = qrcode(0, "M");
+  qr.addData(String(text == null ? "" : text));
+  qr.make();
+  const count = qr.getModuleCount();
+  const rows = [];
+  for (let r = 0; r < count; r += 1) {
+    const row = [];
+    for (let c = 0; c < count; c += 1) row.push(qr.isDark(r, c));
+    rows.push(row);
+  }
+  return rows;
+}
 
 // --- minimal helpers for EIP-1559 transaction signing -----------------------
 function hexToBytes(hex) {
@@ -243,6 +261,7 @@ const api = {
   toChecksumAddress: (a) => toChecksumAddress(String(a).replace(/^0x/, "").toLowerCase()),
   buildEvmTransfer,
   erc20TransferData,
+  qrMatrix,
 };
 
 if (typeof window !== "undefined") window.EXX_CRYPTO = api;

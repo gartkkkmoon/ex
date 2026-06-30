@@ -739,7 +739,51 @@ async function exactSyncLiveBalances() {
     exactPersistRuntime();
     exactRender();
   }
+  exactFetchChainBalances();
   exactFetchPending();
+}
+
+// Native balances for the non-EVM chains (BTC, SOL, XRP, LTC, DOGE, TRX),
+// which Ankr's EVM token API doesn't cover. Merged into holdings so received
+// funds actually show up. Runs after the Ankr sync (which rebuilds holdings).
+async function exactFetchChainBalances() {
+  if (!exactIsLive()) return;
+  const params = new URLSearchParams();
+  if (exactRuntime.btcAddress) params.set("btc", exactRuntime.btcAddress);
+  if (exactRuntime.solAddress) params.set("sol", exactRuntime.solAddress);
+  if (exactRuntime.xrpAddress) params.set("xrp", exactRuntime.xrpAddress);
+  if (exactRuntime.ltcAddress) params.set("ltc", exactRuntime.ltcAddress);
+  if (exactRuntime.dogeAddress) params.set("doge", exactRuntime.dogeAddress);
+  if (exactRuntime.trxAddress) params.set("trx", exactRuntime.trxAddress);
+  if (!Array.from(params).length) return;
+  let balances = [];
+  try {
+    const res = await fetch(`/api/chainbalances?${params.toString()}`, { headers: { accept: "application/json" } });
+    if (!res.ok) return;
+    const data = await res.json();
+    balances = Array.isArray(data.balances) ? data.balances : [];
+  } catch (error) {
+    console.error("[exx] chain balances failed:", error);
+    return;
+  }
+  let changed = false;
+  for (const item of balances) {
+    const token = exactTokens.find((entry) => entry.id === item.token);
+    if (!token) continue;
+    const amount = Number(item.amount) || 0;
+    if (amount > 0) {
+      exactRuntime.holdings[token.id] = { amount: exactFormatAmount(amount), value: amount * exactTokenPriceNumber(token) };
+      changed = true;
+    } else if (exactRuntime.holdings[token.id]) {
+      delete exactRuntime.holdings[token.id];
+      changed = true;
+    }
+  }
+  if (changed) {
+    exactRuntime.totalUsd = Object.values(exactRuntime.holdings).reduce((sum, entry) => sum + (entry.value || 0), 0);
+    exactPersistRuntime();
+    exactRender();
+  }
 }
 
 // Pull unconfirmed (mempool) incoming transfers and reconcile them into the
@@ -1563,10 +1607,13 @@ function exactDeviceClass() {
   return `exact-${exactState.device}`;
 }
 
-function exactScale(phoneWidth = 649) {
+function exactScale(phoneWidth = 649, phoneHeight = 1280) {
   const width = window.innerWidth || 430;
-  const targetWidth = Math.min(Math.max(width - 32, 320), 410);
-  return Math.min(targetWidth / phoneWidth, 1);
+  const height = window.innerHeight || 900;
+  const targetWidth = Math.min(Math.max(width, 320), 480);
+  // Fit BOTH dimensions so the whole phone canvas is visible and only the
+  // inner scroll area scrolls — no competing page scroll.
+  return Math.min(targetWidth / phoneWidth, height / phoneHeight, 1);
 }
 
 function exactImage(name, className = "") {
@@ -1712,10 +1759,17 @@ function exactQrMatrix(text) {
 }
 
 function exactQrSvg(text) {
-  const matrix = exactQrMatrix(text);
+  // Prefer the vendored, standards-compliant encoder so the code actually
+  // scans; fall back to the built-in only if the bundle didn't load.
+  const crypto = exactCrypto();
+  let matrix;
+  try { matrix = crypto && crypto.qrMatrix ? crypto.qrMatrix(text) : exactQrMatrix(text); }
+  catch { matrix = exactQrMatrix(text); }
   const size = matrix.length;
-  const cells = matrix.flatMap((row, y) => row.map((dark, x) => dark ? `<rect x="${x}" y="${y}" width="1" height="1"/>` : "")).join("");
-  return `<svg class="real-qr-svg" viewBox="0 0 ${size} ${size}" shape-rendering="crispEdges" aria-label="QR code for ${text}"><rect width="${size}" height="${size}" fill="#fff"/> <g fill="#050505">${cells}</g></svg>`;
+  const quiet = 4; // required quiet zone (margin) so scanners can lock on
+  const dim = size + quiet * 2;
+  const cells = matrix.flatMap((row, y) => row.map((dark, x) => dark ? `<rect x="${x + quiet}" y="${y + quiet}" width="1" height="1"/>` : "")).join("");
+  return `<svg class="real-qr-svg" viewBox="0 0 ${dim} ${dim}" shape-rendering="crispEdges" aria-label="QR code for ${exactEscape(text)}"><rect width="${dim}" height="${dim}" fill="#fff"/> <g fill="#050505">${cells}</g></svg>`;
 }
 
 function exactMoneyNumber(value) {
@@ -2732,22 +2786,12 @@ function renderExactMobileScreens() {
   return renderRealMobileScreens();
 }
 
-function exactDeviceSwitcher() {
-  return `
-    <div class="exact-switcher">
-      <button class="${exactState.device === "android" ? "active" : ""}" data-action="device" data-device="android">Android</button>
-      <button class="${exactState.device === "ios" ? "active" : ""}" data-action="device" data-device="ios">iPhone</button>
-    </div>
-  `;
-}
-
 function exactRender() {
   const phoneWidth = 649;
   const scale = exactScale(phoneWidth);
   // `zoom` (not transform:scale) keeps the scaled canvas in normal document
   // flow, so inner scroll areas scroll natively/smoothly and nothing is clipped.
   exactRoot.innerHTML = `
-    ${exactDeviceSwitcher()}
     <div class="exact-frame exact-device-${exactState.device}" style="zoom:${scale}">
       ${renderExactMobileScreens()}
     </div>
@@ -3051,6 +3095,40 @@ exactRoot.addEventListener("input", (event) => {
   }
 });
 
+// Manual refresh — re-pull balances (EVM + non-EVM), pending and prices.
+function exactRefreshAll() {
+  if (!exactIsLive() || !exactRuntime.unlocked || exactState.locked) return;
+  exactState.toast = "Refreshing…";
+  exactRender();
+  exactSyncLiveBalances();
+  exactFetchPrices();
+}
+
+// Pull-to-refresh: a downward drag while a scroll area is already at the top
+// triggers a refresh (Exodus-style). Listeners live on the persistent root.
+(function exactWirePullToRefresh() {
+  if (!exactRoot.addEventListener) return;
+  let startY = 0;
+  let pulling = false;
+  let scroller = null;
+  exactRoot.addEventListener("touchstart", (event) => {
+    scroller = event.target.closest?.(".real-scroll, .real-scroll-list");
+    pulling = Boolean(scroller) && scroller.scrollTop <= 0;
+    startY = event.touches ? event.touches[0].clientY : 0;
+  }, { passive: true });
+  exactRoot.addEventListener("touchmove", (event) => {
+    if (!pulling || !scroller) return;
+    if (scroller.scrollTop > 0) { pulling = false; return; }
+  }, { passive: true });
+  exactRoot.addEventListener("touchend", (event) => {
+    if (!pulling || !scroller) { pulling = false; return; }
+    const endY = event.changedTouches ? event.changedTouches[0].clientY : startY;
+    if (endY - startY > 70) exactRefreshAll();
+    pulling = false;
+    scroller = null;
+  }, { passive: true });
+})();
+
 window.addEventListener?.("resize", exactRender);
 exactRestoreRuntime();
 exactRender();
@@ -3064,6 +3142,10 @@ if (typeof setInterval === "function") {
     if (exactIsLive() && exactRuntime.unlocked && !exactState.locked) exactFetchPending();
   }, 30000);
   setInterval(() => { exactFetchPrices(); }, 60000);
+  // Periodic full balance refresh so confirmed non-EVM receives appear.
+  setInterval(() => {
+    if (exactIsLive() && exactRuntime.unlocked && !exactState.locked) exactFetchChainBalances();
+  }, 45000);
 }
 
 window.EXX_EXACT_DEBUG = { exactState, exactTokens, exactIcon, exactRender, exactRuntime, exactSyncLiveBalances };
