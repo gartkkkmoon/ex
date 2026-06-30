@@ -6,9 +6,12 @@ import { generateMnemonic as genMnemonic, validateMnemonic as valMnemonic, mnemo
 import { wordlist } from "@scure/bip39/wordlists/english";
 import { HDKey } from "@scure/bip32";
 import { secp256k1 } from "@noble/curves/secp256k1";
+import { ed25519 } from "@noble/curves/ed25519";
 import { keccak_256 } from "@noble/hashes/sha3";
 import { sha256 } from "@noble/hashes/sha256";
+import { sha512 } from "@noble/hashes/sha512";
 import { ripemd160 } from "@noble/hashes/ripemd160";
+import { hmac } from "@noble/hashes/hmac";
 import { bytesToHex, hexToBytes as nobleHexToBytes } from "@noble/hashes/utils";
 import { bech32 } from "@scure/base";
 
@@ -127,6 +130,104 @@ function btcAddressFromMnemonic(mnemonic, index = 0) {
   return bech32.encode("bc", [0, ...bech32.toWords(program)]); // witness v0
 }
 
+// --- base58 / base58check (Bitcoin + Ripple alphabets) ----------------------
+const B58 = "123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz";
+const XRP58 = "rpshnaf39wBUDNEGHJKLM4PQRST7VWXYZ2bcdeCg65jkm8oFqi1tuvAxyz";
+
+function base58encode(bytes, alphabet = B58) {
+  const digits = [0];
+  for (let i = 0; i < bytes.length; i += 1) {
+    let carry = bytes[i];
+    for (let j = 0; j < digits.length; j += 1) {
+      carry += digits[j] << 8;
+      digits[j] = carry % 58;
+      carry = (carry / 58) | 0;
+    }
+    while (carry) { digits.push(carry % 58); carry = (carry / 58) | 0; }
+  }
+  let out = "";
+  for (let k = 0; k < bytes.length && bytes[k] === 0; k += 1) out += alphabet[0];
+  for (let q = digits.length - 1; q >= 0; q -= 1) out += alphabet[digits[q]];
+  return out;
+}
+
+function base58check(payload, alphabet = B58) {
+  const checksum = sha256(sha256(payload)).slice(0, 4);
+  return base58encode(concatBytes([payload, checksum]), alphabet);
+}
+
+// --- SLIP-0010 hardened ed25519 derivation (for Solana) ---------------------
+function ser32(index) {
+  const out = new Uint8Array(4);
+  out[0] = (index >>> 24) & 0xff;
+  out[1] = (index >>> 16) & 0xff;
+  out[2] = (index >>> 8) & 0xff;
+  out[3] = index & 0xff;
+  return out;
+}
+
+function slip10Ed25519(seed, pathIndexes) {
+  let I = hmac(sha512, new TextEncoder().encode("ed25519 seed"), seed);
+  let key = I.slice(0, 32);
+  let chain = I.slice(32);
+  for (const idx of pathIndexes) {
+    const data = concatBytes([Uint8Array.of(0), key, ser32((idx | 0x80000000) >>> 0)]);
+    I = hmac(sha512, chain, data);
+    key = I.slice(0, 32);
+    chain = I.slice(32);
+  }
+  return key;
+}
+
+// --- non-EVM address derivations (standard paths, interoperable) ------------
+// Solana — ed25519, m/44'/501'/0'/0' (Phantom/Solflare default).
+function solAddressFromMnemonic(mnemonic) {
+  const seed = mnemonicToSeedSync(String(mnemonic).trim());
+  const priv = slip10Ed25519(seed, [44, 501, 0, 0]);
+  const pub = ed25519.getPublicKey(priv);
+  return base58encode(pub, B58);
+}
+
+// XRP — secp256k1, m/44'/144'/0'/0/0, classic r-address.
+function xrpAddressFromMnemonic(mnemonic) {
+  const seed = mnemonicToSeedSync(String(mnemonic).trim());
+  const hd = HDKey.fromMasterSeed(seed);
+  const child = hd.derive("m/44'/144'/0'/0/0");
+  const pub = secp256k1.getPublicKey(child.privateKey, true);
+  const accountId = ripemd160(sha256(pub));
+  return base58check(concatBytes([Uint8Array.of(0x00), accountId]), XRP58);
+}
+
+// Tron — secp256k1, m/44'/195'/0'/0/0, base58check address starting with 'T'.
+function tronAddressFromMnemonic(mnemonic) {
+  const seed = mnemonicToSeedSync(String(mnemonic).trim());
+  const hd = HDKey.fromMasterSeed(seed);
+  const child = hd.derive("m/44'/195'/0'/0/0");
+  const pub = secp256k1.getPublicKey(child.privateKey, false); // uncompressed
+  const hash = keccak_256(pub.slice(1)).slice(-20);
+  return base58check(concatBytes([Uint8Array.of(0x41), hash]), B58);
+}
+
+// Dogecoin — secp256k1, m/44'/3'/0'/0/0, P2PKH (version 0x1e), starts with 'D'.
+function dogeAddressFromMnemonic(mnemonic) {
+  const seed = mnemonicToSeedSync(String(mnemonic).trim());
+  const hd = HDKey.fromMasterSeed(seed);
+  const child = hd.derive("m/44'/3'/0'/0/0");
+  const pub = secp256k1.getPublicKey(child.privateKey, true);
+  const h160 = ripemd160(sha256(pub));
+  return base58check(concatBytes([Uint8Array.of(0x1e), h160]), B58);
+}
+
+// Litecoin — native segwit (BIP84), m/84'/2'/0'/0/0, ltc1... bech32.
+function ltcAddressFromMnemonic(mnemonic) {
+  const seed = mnemonicToSeedSync(String(mnemonic).trim());
+  const hd = HDKey.fromMasterSeed(seed);
+  const child = hd.derive("m/84'/2'/0'/0/0");
+  const pub = secp256k1.getPublicKey(child.privateKey, true);
+  const program = ripemd160(sha256(pub));
+  return bech32.encode("ltc", [0, ...bech32.toWords(program)]);
+}
+
 const api = {
   generateMnemonic: (words = 12) => genMnemonic(wordlist, words === 24 ? 256 : 128),
   validateMnemonic: (m) => {
@@ -134,6 +235,11 @@ const api = {
   },
   ethAddressFromMnemonic,
   btcAddressFromMnemonic,
+  solAddressFromMnemonic,
+  xrpAddressFromMnemonic,
+  tronAddressFromMnemonic,
+  dogeAddressFromMnemonic,
+  ltcAddressFromMnemonic,
   toChecksumAddress: (a) => toChecksumAddress(String(a).replace(/^0x/, "").toLowerCase()),
   buildEvmTransfer,
   erc20TransferData,

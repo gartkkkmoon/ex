@@ -91,70 +91,6 @@ const exactTokens = [
     chart: [52, 54, 53, 52, 56, 52, 54, 53, 52, 55, 53, 54, 52],
   },
   {
-    id: "dai",
-    name: "Dai Stablecoin",
-    symbol: "DAI",
-    tokenKind: "token",
-    price: "$1.00",
-    change: "+0%",
-    color: "#f5ac37",
-    icon: "D",
-    networks: [
-      { id: "ethereum", label: "Ethereum", tag: "ETH", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
-      { id: "polygon", label: "Polygon", tag: "POL", feeSymbol: "POL", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
-      { id: "arbitrum", label: "Arbitrum One", tag: "ARB1", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
-      { id: "optimism", label: "Optimism", tag: "OP", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
-    ],
-    chart: [51, 52, 51, 53, 52, 52, 54, 52, 52, 53, 51, 52],
-  },
-  {
-    id: "wrapped-bitcoin",
-    name: "Wrapped Bitcoin",
-    symbol: "WBTC",
-    assetKey: "btc",
-    tokenKind: "token",
-    price: "$59,474.35",
-    change: "-2.6%",
-    color: "#f7931a",
-    icon: "₿",
-    networks: [
-      { id: "ethereum", label: "Ethereum", tag: "ETH", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
-      { id: "polygon", label: "Polygon", tag: "POL", feeSymbol: "POL", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
-      { id: "arbitrum", label: "Arbitrum One", tag: "ARB1", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
-      { id: "optimism", label: "Optimism", tag: "OP", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
-    ],
-    chart: [58, 76, 70, 68, 73, 79, 98, 80, 54, 70, 44, 47, 63, 56, 55, 35, 34, 28, 61, 63, 69, 78],
-  },
-  {
-    id: "chainlink",
-    name: "Chainlink",
-    symbol: "LINK",
-    tokenKind: "token",
-    price: "$13.41",
-    change: "+1.1%",
-    color: "#375bd2",
-    icon: "⬡",
-    networks: [
-      { id: "ethereum", label: "Ethereum", tag: "ETH", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
-      { id: "polygon", label: "Polygon", tag: "POL", feeSymbol: "POL", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
-      { id: "arbitrum", label: "Arbitrum One", tag: "ARB1", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
-      { id: "optimism", label: "Optimism", tag: "OP", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" },
-    ],
-    chart: [30, 38, 33, 44, 39, 58, 51, 63, 56, 72, 67, 82, 78],
-  },
-  {
-    id: "polygon",
-    name: "Polygon",
-    symbol: "POL",
-    tokenKind: "native",
-    price: "$0.21",
-    change: "-0.8%",
-    color: "#8247e5",
-    icon: "∞",
-    networks: [{ id: "polygon", label: "Polygon", tag: "POL", feeSymbol: "POL", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" }],
-    chart: [34, 42, 41, 49, 38, 44, 52, 58, 50, 62, 60, 67],
-  },
-  {
     id: "bnb",
     name: "BNB",
     symbol: "BNB",
@@ -167,37 +103,11 @@ const exactTokens = [
     networks: [{ id: "bsc", label: "BNB Smart Chain", tag: "BSC", feeSymbol: "BNB", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" }],
     chart: [48, 50, 55, 52, 58, 61, 57, 68, 66, 72, 77, 74],
   },
-  {
-    id: "arbitrum",
-    name: "Arbitrum",
-    symbol: "ARB",
-    tokenKind: "native",
-    price: "$0.31",
-    change: "+2.4%",
-    color: "#4d8dff",
-    icon: "A",
-    networks: [{ id: "arbitrum", label: "Arbitrum One", tag: "ARB1", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" }],
-    chart: [34, 31, 40, 38, 45, 44, 52, 48, 61, 59, 67, 72],
-  },
-  {
-    id: "optimism",
-    name: "Optimism",
-    symbol: "OP",
-    tokenKind: "native",
-    price: "$0.51",
-    change: "-1.2%",
-    color: "#ff4b5c",
-    icon: "OP",
-    networks: [{ id: "optimism", label: "Optimism", tag: "OP", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" }],
-    chart: [52, 48, 50, 44, 43, 38, 42, 39, 47, 45, 52, 49],
-  },
   { id: "xrp", name: "XRP", symbol: "XRP", assetKey: "xrp", tokenKind: "native", price: "$2.13", change: "+3.2%", color: "#15a7d6", icon: "×", networks: [{ id: "xrp", label: "XRP Ledger", tag: "XRP", feeSymbol: "XRP", address: "rExodusPreviewWallet2m2Y2yjNox" }], chart: [40, 48, 44, 59, 55, 68, 64, 70, 66, 76, 72, 80] },
   { id: "solana", name: "Solana", symbol: "SOL", assetKey: "sol", tokenKind: "native", price: "$66.33", change: "-2.3%", color: "#24dfa6", icon: "≋", networks: [{ id: "solana", label: "Solana", tag: "SOL", feeSymbol: "SOL", address: "ExodusPreviewSolana8oZc7wY6mKiVGm" }], chart: [62, 58, 64, 61, 69, 66, 73, 70, 67, 72, 68, 75] },
   { id: "tron", name: "Tron", symbol: "TRX", assetKey: "trx", tokenKind: "native", price: "$0.3235", change: "-1%", color: "#b31d36", icon: "▽", networks: [{ id: "tron", label: "Tron", tag: "TRX", feeSymbol: "TRX", address: "TExodusPreviewWalletRHNfxyJwqk" }], chart: [42, 44, 41, 47, 45, 52, 50, 48, 53, 51, 55, 54] },
   { id: "dogecoin", name: "Dogecoin", symbol: "DOGE", assetKey: "doge", tokenKind: "native", price: "$0.0738", change: "-2.3%", color: "#c7b348", icon: "Ð", networks: [{ id: "dogecoin", label: "Dogecoin", tag: "DOGE", feeSymbol: "DOGE", address: "DExodusPreviewWallet8bd5e6g3" }], chart: [36, 42, 39, 51, 44, 58, 50, 54, 49, 61, 56, 64] },
-  { id: "cardano", name: "Cardano", symbol: "ADA", assetKey: "ada", tokenKind: "native", price: "$0.1418", change: "-3.3%", color: "#3479f6", icon: "✺", networks: [{ id: "cardano", label: "Cardano", tag: "ADA", feeSymbol: "ADA", address: "addr1exoduspreviewwallet4q4ka4" }], chart: [48, 42, 45, 39, 41, 36, 40, 34, 38, 32, 35, 31] },
   { id: "litecoin", name: "Litecoin", symbol: "LTC", assetKey: "ltc", tokenKind: "native", price: "$40.82", change: "+0%", color: "#d7d8dc", icon: "Ł", networks: [{ id: "litecoin", label: "Litecoin", tag: "LTC", feeSymbol: "LTC", address: "ltc1qexoduspreviewwalletc2wjr8" }], chart: [40, 41, 39, 43, 42, 45, 44, 43, 46, 45, 47, 46] },
-  { id: "xocash", name: "XO Cash", symbol: "XO", assetKey: "xo", tokenKind: "token", price: "$1.00", change: "+0%", color: "#18d943", icon: "XO", networks: [{ id: "ethereum", label: "Ethereum", tag: "ETH", feeSymbol: "ETH", address: "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289" }], chart: [52, 53, 52, 54, 52, 53, 52] },
 ];
 
 const exactAnkrNetworkIds = [
@@ -321,49 +231,11 @@ function exactMergeTokenNetworks(tokenId, networks) {
   token.networks.push(...networks.filter((network) => !seen.has(network.id)));
 }
 
-exactMergeTokenNetworks("tether", exactEvmTokenNetworks);
-exactMergeTokenNetworks("usd-coin", exactEvmTokenNetworks);
-exactMergeTokenNetworks("dai", exactEvmTokenNetworks.filter((network) => !["bsc"].includes(network.id)));
-exactMergeTokenNetworks("wrapped-bitcoin", exactEvmTokenNetworks.filter((network) => !["bsc", "avalanche"].includes(network.id)));
-exactMergeTokenNetworks("chainlink", exactEvmTokenNetworks.filter((network) => !["bsc"].includes(network.id)));
-
-exactTokens.push(
-  { id: "base-eth", name: "Base Ethereum", symbol: "ETH", tokenKind: "native", price: "$1,560.86", detailPrice: "$1,562.19", change: "+0.3%", detailChange: "+0.3%", color: "#4f8dff", icon: "B", networks: [{ id: "base", label: "Base", tag: "BASE", feeSymbol: "ETH", address: exactPreviewAddress }], chart: [52, 56, 54, 61, 58, 69, 63, 72, 70, 78, 74, 82] },
-  { id: "avalanche", name: "Avalanche", symbol: "AVAX", tokenKind: "native", price: "$27.70", change: "+1.8%", color: "#e84142", icon: "A", networks: [{ id: "avalanche", label: "Avalanche", tag: "AVAX", feeSymbol: "AVAX", address: exactPreviewAddress }], chart: [44, 48, 46, 52, 57, 55, 63, 61, 70, 67, 73, 76] },
-  { id: "fantom", name: "Fantom", symbol: "FTM", tokenKind: "native", price: "$0.36", change: "-0.7%", color: "#1969ff", icon: "F", networks: [{ id: "fantom", label: "Fantom", tag: "FTM", feeSymbol: "FTM", address: exactPreviewAddress }], chart: [58, 55, 53, 56, 49, 52, 47, 51, 46, 48, 45, 50] },
-  { id: "gnosis", name: "Gnosis", symbol: "xDAI", tokenKind: "native", price: "$1.00", change: "+0%", color: "#48a987", icon: "G", networks: [{ id: "gnosis", label: "Gnosis", tag: "GNO", feeSymbol: "xDAI", address: exactPreviewAddress }], chart: [52, 52, 53, 52, 54, 52, 53, 52, 52, 53, 52, 52] },
-  { id: "linea-eth", name: "Linea Ethereum", symbol: "ETH", tokenKind: "native", price: "$1,560.86", change: "+0.3%", color: "#72f0b0", icon: "L", networks: [{ id: "linea", label: "Linea", tag: "LINEA", feeSymbol: "ETH", address: exactPreviewAddress }], chart: [49, 54, 52, 60, 57, 65, 61, 71, 68, 76, 73, 80] },
-  { id: "scroll-eth", name: "Scroll Ethereum", symbol: "ETH", tokenKind: "native", price: "$1,560.86", change: "+0.3%", color: "#f4d4aa", icon: "S", networks: [{ id: "scroll", label: "Scroll", tag: "SCR", feeSymbol: "ETH", address: exactPreviewAddress }], chart: [46, 50, 52, 51, 59, 58, 64, 62, 70, 68, 73, 79] },
-  { id: "flare", name: "Flare", symbol: "FLR", tokenKind: "native", price: "$0.014", change: "+0.9%", color: "#e62058", icon: "F", networks: [{ id: "flare", label: "Flare", tag: "FLR", feeSymbol: "FLR", address: exactPreviewAddress }], chart: [42, 45, 44, 48, 46, 53, 51, 55, 54, 58, 57, 61] },
-  { id: "story", name: "Story", symbol: "IP", tokenKind: "native", price: "$3.42", change: "+2.1%", color: "#72e2ff", icon: "IP", networks: [{ id: "story", label: "Story", tag: "IP", feeSymbol: "IP", address: exactPreviewAddress }], chart: [41, 44, 50, 47, 56, 54, 62, 59, 67, 70, 73, 78] },
-  { id: "syscoin", name: "Syscoin", symbol: "SYS", tokenKind: "native", price: "$0.066", change: "-0.4%", color: "#00a4ff", icon: "S", networks: [{ id: "syscoin", label: "Syscoin", tag: "SYS", feeSymbol: "SYS", address: exactPreviewAddress }], chart: [52, 50, 51, 48, 49, 46, 48, 45, 47, 44, 46, 48] },
-  { id: "taiko", name: "Taiko", symbol: "TAIKO", tokenKind: "native", price: "$0.56", change: "+1.3%", color: "#e81899", icon: "T", networks: [{ id: "taiko", label: "Taiko", tag: "TAIKO", feeSymbol: "ETH", address: exactPreviewAddress }], chart: [40, 45, 43, 51, 48, 57, 54, 60, 58, 66, 63, 70] },
-  { id: "telos", name: "Telos", symbol: "TLOS", tokenKind: "native", price: "$0.071", change: "+0.2%", color: "#7048e8", icon: "T", networks: [{ id: "telos", label: "Telos", tag: "TLOS", feeSymbol: "TLOS", address: exactPreviewAddress }], chart: [48, 49, 47, 50, 52, 51, 54, 53, 56, 55, 57, 58] },
-  { id: "xai", name: "Xai", symbol: "XAI", tokenKind: "native", price: "$0.065", change: "-1.7%", color: "#f24a62", icon: "X", networks: [{ id: "xai", label: "Xai", tag: "XAI", feeSymbol: "XAI", address: exactPreviewAddress }], chart: [61, 58, 55, 57, 52, 54, 50, 48, 51, 47, 49, 46] },
-  { id: "xlayer", name: "X Layer", symbol: "OKB", tokenKind: "native", price: "$49.21", change: "+0.5%", color: "#cfd5df", icon: "X", networks: [{ id: "xlayer", label: "X Layer", tag: "XLAYER", feeSymbol: "OKB", address: exactPreviewAddress }], chart: [53, 55, 56, 54, 59, 58, 62, 61, 64, 63, 66, 68] },
-  { id: "stellar", name: "Stellar", symbol: "XLM", tokenKind: "native", price: "$0.25", change: "+1.1%", color: "#dce3ef", icon: "S", networks: [{ id: "stellar", label: "Stellar", tag: "XLM", feeSymbol: "XLM", address: "GEXODUSPREVIEWSTELLARWALLET9H8A2F6R7M4Z" }], chart: [44, 46, 48, 45, 52, 50, 56, 54, 58, 57, 62, 64] },
-  { id: "hyper-evm", name: "HyperEVM", symbol: "HYPE", tokenKind: "native", price: "$38.16", change: "+2.8%", color: "#18d2a3", icon: "H", networks: [{ id: "hyperevm", label: "HyperEVM", tag: "HYPE", feeSymbol: "HYPE", address: exactPreviewAddress }], chart: [50, 52, 55, 53, 62, 59, 68, 66, 74, 72, 79, 83] },
-  { id: "zcash", name: "Zcash", symbol: "ZEC", tokenKind: "native", price: "$35.29", change: "-0.6%", color: "#f4c431", icon: "Z", networks: [{ id: "zcash", label: "Zcash", tag: "ZEC", feeSymbol: "ZEC", address: "t1ExodusPreviewZcashWallet8bd5e6g3" }], chart: [55, 52, 50, 53, 48, 51, 47, 49, 46, 48, 45, 47] },
-  { id: "toncoin", name: "Toncoin", symbol: "TON", tokenKind: "native", price: "$3.18", change: "+0.4%", color: "#2fb6e8", icon: "T", networks: [{ id: "ton", label: "Toncoin", tag: "TON", feeSymbol: "TON", address: "UQExodusPreviewTonWallet7w2na6r3" }], chart: [47, 49, 51, 50, 54, 53, 57, 56, 60, 59, 62, 64] },
-  { id: "uniswap", name: "Uniswap", symbol: "UNI", tokenKind: "token", price: "$9.14", change: "+1.4%", color: "#ff55aa", icon: "U", networks: exactEvmTokenNetworks.filter((network) => !["bsc", "avalanche"].includes(network.id)), chart: [35, 40, 38, 45, 50, 48, 59, 56, 63, 61, 69, 72] },
-  { id: "aave", name: "Aave", symbol: "AAVE", tokenKind: "token", price: "$267.44", change: "+0.8%", color: "#9b7cff", icon: "A", networks: exactEvmTokenNetworks.filter((network) => network.id !== "bsc"), chart: [52, 51, 55, 54, 58, 62, 60, 65, 63, 70, 68, 73] },
-  { id: "shiba-inu", name: "Shiba Inu", symbol: "SHIB", tokenKind: "token", price: "$0.000011", change: "-1.5%", color: "#f1862f", icon: "S", networks: exactEvmTokenNetworks.filter((network) => ["ethereum", "base"].includes(network.id)), chart: [58, 54, 50, 55, 49, 45, 48, 44, 42, 46, 43, 41] },
-  { id: "pepe", name: "Pepe", symbol: "PEPE", tokenKind: "token", price: "$0.000009", change: "+2.2%", color: "#64d65e", icon: "P", networks: exactEvmTokenNetworks.filter((network) => ["ethereum", "base", "arbitrum"].includes(network.id)), chart: [41, 44, 52, 48, 61, 57, 69, 66, 75, 71, 80, 78] },
-  { id: "render", name: "Render", symbol: "RENDER", tokenKind: "token", price: "$3.74", change: "+0.7%", color: "#ff4b4b", icon: "R", networks: exactEvmTokenNetworks.filter((network) => ["ethereum", "polygon", "base"].includes(network.id)), chart: [45, 47, 50, 49, 56, 54, 60, 58, 65, 64, 70, 72] },
-  { id: "the-graph", name: "The Graph", symbol: "GRT", tokenKind: "token", price: "$0.081", change: "-0.3%", color: "#795bff", icon: "G", networks: exactEvmTokenNetworks.filter((network) => ["ethereum", "arbitrum"].includes(network.id)), chart: [56, 54, 52, 55, 51, 53, 49, 50, 48, 51, 49, 52] },
-  { id: "paypal-usd", name: "PayPal USD", symbol: "PYUSD", tokenKind: "token", price: "$1.00", change: "+0%", color: "#2d7ff9", icon: "$", networks: exactEvmTokenNetworks.filter((network) => ["ethereum", "base"].includes(network.id)), chart: [52, 53, 52, 52, 53, 52, 53, 52, 52, 53, 52, 52] },
-  { id: "euro-coin", name: "EURC", symbol: "EURC", tokenKind: "token", price: "$1.07", change: "+0.1%", color: "#2474ff", icon: "€", networks: exactEvmTokenNetworks.filter((network) => ["ethereum", "base", "avalanche"].includes(network.id)), chart: [52, 54, 53, 55, 54, 56, 55, 57, 56, 58, 57, 59] },
-);
-
+// Major assets only. tether/usd-coin already declare their EVM networks inline
+// (Ethereum, BSC, Polygon, Arbitrum, Optimism — the ones we hold token
+// contracts for), so no extra network merging is needed.
 Object.assign(exactPortfolioHoldings, {
-  polygon: { amount: "950", value: 199.5 },
   "usd-coin": { amount: "1,200", value: 1200 },
-  chainlink: { amount: "22.4", value: 300.38 },
-  avalanche: { amount: "18.5", value: 512.45 },
-  "base-eth": { amount: "0.75", value: 1170.64 },
-  uniswap: { amount: "34", value: 310.42 },
-  aave: { amount: "1.6", value: 427.9 },
-  stellar: { amount: "1,589.01", value: 397.25 },
 });
 
 const exactInitialTransactions = [
@@ -573,11 +445,13 @@ const exactState = {
     "bitcoin:bitcoin",
     "ethereum:ethereum",
     "tether:ethereum",
+    "usd-coin:ethereum",
     "bnb:bsc",
     "solana:solana",
     "xrp:xrp",
-    "usd-coin:base",
+    "tron:tron",
     "dogecoin:dogecoin",
+    "litecoin:litecoin",
   ]),
   restorePhrase: "",
   restoreAddress: "",
@@ -605,6 +479,11 @@ const exactRuntime = {
   mode: "preview", // "preview" (placeholder demo data) | "live" (real Ankr balances)
   address: "",
   btcAddress: "",
+  solAddress: "",
+  xrpAddress: "",
+  trxAddress: "",
+  dogeAddress: "",
+  ltcAddress: "",
   ankrToken: "",
   unlocked: false,
   holdings: {}, // tokenId -> { amount: string, value: number }
@@ -730,6 +609,11 @@ function exactPersistRuntime() {
       mode: exactRuntime.mode,
       address: exactRuntime.address,
       btcAddress: exactRuntime.btcAddress,
+      solAddress: exactRuntime.solAddress,
+      xrpAddress: exactRuntime.xrpAddress,
+      trxAddress: exactRuntime.trxAddress,
+      dogeAddress: exactRuntime.dogeAddress,
+      ltcAddress: exactRuntime.ltcAddress,
       ankrToken: exactRuntime.ankrToken,
       unlocked: exactRuntime.unlocked,
       holdings: exactRuntime.holdings,
@@ -756,6 +640,11 @@ function exactRestoreRuntime() {
   exactRuntime.mode = saved.mode === "live" ? "live" : "preview";
   exactRuntime.address = saved.address || "";
   exactRuntime.btcAddress = saved.btcAddress || "";
+  exactRuntime.solAddress = saved.solAddress || "";
+  exactRuntime.xrpAddress = saved.xrpAddress || "";
+  exactRuntime.trxAddress = saved.trxAddress || "";
+  exactRuntime.dogeAddress = saved.dogeAddress || "";
+  exactRuntime.ltcAddress = saved.ltcAddress || "";
   exactRuntime.ankrToken = saved.ankrToken || "";
   exactRuntime.unlocked = Boolean(saved.unlocked);
   exactRuntime.holdings = saved.holdings && typeof saved.holdings === "object" ? saved.holdings : {};
@@ -907,10 +796,19 @@ function exactApplyPending(list) {
   return exactState.transactions.length !== before;
 }
 
+function exactClearChainAddresses() {
+  exactRuntime.btcAddress = "";
+  exactRuntime.solAddress = "";
+  exactRuntime.xrpAddress = "";
+  exactRuntime.trxAddress = "";
+  exactRuntime.ltcAddress = "";
+  exactRuntime.dogeAddress = "";
+}
+
 function exactEnterLiveWallet(address) {
   exactRuntime.mode = "live";
   exactRuntime.address = address;
-  exactRuntime.btcAddress = "";
+  exactClearChainAddresses();
   exactRuntime.unlocked = true;
   exactRuntime.holdings = {};
   exactRuntime.totalUsd = 0;
@@ -921,7 +819,7 @@ function exactEnterLiveWallet(address) {
 
 function exactEnterPreviewWallet() {
   exactRuntime.mode = "preview";
-  exactRuntime.btcAddress = "";
+  exactClearChainAddresses();
   exactRuntime.unlocked = true;
   exactRuntime.error = "";
   exactRuntime.status = "";
@@ -932,7 +830,7 @@ function exactEnterPreviewWallet() {
 function exactResetWallet() {
   exactRuntime.mode = "preview";
   exactRuntime.address = "";
-  exactRuntime.btcAddress = "";
+  exactClearChainAddresses();
   exactRuntime.unlocked = false;
   exactRuntime.holdings = {};
   exactRuntime.totalUsd = 0;
@@ -966,6 +864,20 @@ function exactDeriveBtcAddress(mnemonic) {
   try { return crypto.btcAddressFromMnemonic(mnemonic); } catch { return ""; }
 }
 
+// Derive every supported chain's real address from the recovery phrase and
+// store it on the runtime (all standard, interoperable derivation paths).
+function exactDeriveAllAddresses(mnemonic) {
+  const crypto = exactCrypto();
+  if (!crypto || !mnemonic) return;
+  const tryDerive = (fn) => { try { return fn ? fn(mnemonic) : ""; } catch { return ""; } };
+  exactRuntime.btcAddress = tryDerive(crypto.btcAddressFromMnemonic);
+  exactRuntime.solAddress = tryDerive(crypto.solAddressFromMnemonic);
+  exactRuntime.xrpAddress = tryDerive(crypto.xrpAddressFromMnemonic);
+  exactRuntime.trxAddress = tryDerive(crypto.tronAddressFromMnemonic);
+  exactRuntime.dogeAddress = tryDerive(crypto.dogeAddressFromMnemonic);
+  exactRuntime.ltcAddress = tryDerive(crypto.ltcAddressFromMnemonic);
+}
+
 // Finalize onboarding once a PIN is set (mirrors the old "Open wallet" step).
 // When a PIN is supplied and we hold the recovery phrase, the seed is encrypted
 // under the PIN so real sends can be signed later.
@@ -985,7 +897,7 @@ async function exactFinalizeOnboarding(pin) {
     exactState.toast = "Wallet ready";
   }
   if (mnemonic) {
-    exactRuntime.btcAddress = exactDeriveBtcAddress(mnemonic);
+    exactDeriveAllAddresses(mnemonic);
     if (pin) await exactEncryptSeed(mnemonic, pin);
     exactPersistRuntime();
   }
@@ -1421,10 +1333,15 @@ async function exactSendEvm({ pin, token, network, amount, to }) {
   return { hash, fee };
 }
 
-// True only for networks whose address we actually derive from the seed.
-function exactNetworkHasRealAddress(networkId) {
-  return EXACT_EVM_NETWORK_IDS.has(networkId) || networkId === "bitcoin";
-}
+// Maps a (non-EVM) network id to the runtime field holding its derived address.
+const EXACT_CHAIN_ADDRESS_FIELD = {
+  bitcoin: "btcAddress",
+  solana: "solAddress",
+  xrp: "xrpAddress",
+  tron: "trxAddress",
+  dogecoin: "dogeAddress",
+  litecoin: "ltcAddress",
+};
 
 function exactReceiveAddress(token = exactToken()) {
   const network = exactSelectedNetwork(token);
@@ -1432,7 +1349,8 @@ function exactReceiveAddress(token = exactToken()) {
     // Live wallet: only ever return a genuinely derived address, never a demo
     // placeholder — sending to a wrong address would lose funds.
     if (EXACT_EVM_NETWORK_IDS.has(network.id)) return exactRuntime.address || "";
-    if (network.id === "bitcoin") return exactRuntime.btcAddress || "";
+    const field = EXACT_CHAIN_ADDRESS_FIELD[network.id];
+    if (field) return exactRuntime[field] || "";
     return "";
   }
   return network.address || "0xDe7bbd62f739210C43FF1f6845B55aAeEEaa8289";
@@ -1815,18 +1733,8 @@ const exactPrices = {}; // tokenId -> { usd, change }
 // built-in placeholder (best-effort; all the majors resolve to live prices).
 const exactCoingeckoIds = {
   bitcoin: "bitcoin", ethereum: "ethereum", tether: "tether", "usd-coin": "usd-coin",
-  dai: "dai", "wrapped-bitcoin": "wrapped-bitcoin", chainlink: "chainlink",
-  polygon: "polygon-ecosystem-token", bnb: "binancecoin", arbitrum: "arbitrum",
-  optimism: "optimism", xrp: "ripple", solana: "solana", tron: "tron",
-  dogecoin: "dogecoin", cardano: "cardano", litecoin: "litecoin",
-  "base-eth": "ethereum", avalanche: "avalanche-2", fantom: "fantom",
-  gnosis: "xdai", "linea-eth": "ethereum", "scroll-eth": "ethereum",
-  flare: "flare-networks", syscoin: "syscoin", taiko: "taiko", telos: "telos",
-  xai: "xai-blockchain", xlayer: "okb", stellar: "stellar",
-  "hyper-evm": "hyperliquid", zcash: "zcash", toncoin: "the-open-network",
-  uniswap: "uniswap", aave: "aave", "shiba-inu": "shiba-inu", pepe: "pepe",
-  render: "render-token", "the-graph": "the-graph", "paypal-usd": "paypal-usd",
-  "euro-coin": "euro-coin",
+  bnb: "binancecoin", xrp: "ripple", solana: "solana", tron: "tron",
+  dogecoin: "dogecoin", litecoin: "litecoin",
 };
 
 function exactTokenPriceNumber(token) {
@@ -1859,6 +1767,8 @@ function exactTokenPriceLabel(token) { return exactFormatPrice(exactTokenPriceNu
 function exactTokenChangeLabel(token) { return exactFormatChange(exactTokenChangeNumber(token)); }
 
 async function exactFetchPrices() {
+  // Needs a real document base for the relative /api URL (skips SSR/smoke).
+  if (typeof window === "undefined" || !window.location) return;
   const ids = Array.from(new Set(Object.values(exactCoingeckoIds)));
   if (!ids.length) return;
   let data;

@@ -67,25 +67,21 @@ const exactDebug = window.EXX_EXACT_DEBUG;
 exactDebug.exactState.screen = "home";
 exactDebug.exactRender();
 
-for (const id of ["bitcoin", "ethereum", "bnb", "xrp", "solana", "tron", "dogecoin", "cardano"]) {
+// Curated to major assets only.
+const expectedTokenIds = ["bitcoin", "ethereum", "tether", "usd-coin", "bnb", "xrp", "solana", "tron", "dogecoin", "litecoin"];
+assert.equal(exactDebug.exactTokens.length, expectedTokenIds.length, "token list should be trimmed to majors");
+for (const id of expectedTokenIds) {
+  assert.ok(exactDebug.exactTokens.find((item) => item.id === id), `missing major token ${id}`);
+}
+
+for (const id of ["bitcoin", "ethereum", "bnb", "xrp", "solana", "tron", "dogecoin", "litecoin"]) {
   const token = exactDebug.exactTokens.find((item) => item.id === id);
-  assert.ok(token, `missing ${id}`);
   assert.match(exactDebug.exactIcon(token), /has-image/, `${id} should use screenshot-style image badge`);
 }
 
-for (const [id, markClass] of Object.entries({
-  tether: "brand-tether-mark",
-  aave: "brand-aave-ghost",
-  stellar: "brand-stellar-mark",
-  uniswap: "brand-uniswap-mark",
-  chainlink: "brand-chainlink-mark",
-  polygon: "brand-polygon-mark",
-})) {
-  const token = exactDebug.exactTokens.find((item) => item.id === id);
-  assert.ok(token, `missing ${id}`);
-  const icon = exactDebug.exactIcon(token);
-  assert.match(icon, /has-vector/, `${id} should use a custom Exodus-style vector badge`);
-  assert.match(icon, new RegExp(markClass), `${id} should use the corrected brand glyph`);
-}
+// Tether keeps its custom Exodus-style vector badge.
+const tether = exactDebug.exactTokens.find((item) => item.id === "tether");
+assert.match(exactDebug.exactIcon(tether), /has-vector/, "tether should use a custom vector badge");
+assert.match(exactDebug.exactIcon(tether), /brand-tether-mark/, "tether should use the corrected brand glyph");
 
 console.log("smoke ok");
