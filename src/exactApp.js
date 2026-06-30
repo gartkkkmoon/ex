@@ -1033,9 +1033,17 @@ async function exactCompleteSend(pin) {
     return;
   }
 
-  // Real on-chain send: UTXO chains (Bitcoin / Litecoin).
+  // Real on-chain send: UTXO chains (Bitcoin / Litecoin / Dogecoin).
   if (exactIsLive() && exactHasEncryptedSeed() && EXACT_UTXO_SEND[network.id] && exactRuntime[EXACT_UTXO_SEND[network.id]]) {
     await exactBroadcastAndRecord(() => exactSendUtxo({ pin, token, network, amount: pending.amount, to: pending.to }), { token, network, pending });
+    return;
+  }
+
+  // Real on-chain send: Solana / XRP / Tron.
+  if (exactIsLive() && exactHasEncryptedSeed() && EXACT_CHAIN_SEND[network.id] && exactRuntime[EXACT_CHAIN_SEND[network.id]]) {
+    const senders = { solana: exactSendSol, xrp: exactSendXrp, tron: exactSendTron };
+    const sender = senders[network.id];
+    await exactBroadcastAndRecord(() => sender({ pin, token, network, amount: pending.amount, to: pending.to }), { token, network, pending });
     return;
   }
 
@@ -1381,7 +1389,7 @@ async function exactSendEvm({ pin, token, network, amount, to }) {
 }
 
 // UTXO chains we can sign + broadcast: network id -> runtime address field.
-const EXACT_UTXO_SEND = { bitcoin: "btcAddress", litecoin: "ltcAddress" };
+const EXACT_UTXO_SEND = { bitcoin: "btcAddress", litecoin: "ltcAddress", dogecoin: "dogeAddress" };
 
 // Sign + broadcast a real UTXO transfer (Bitcoin / Litecoin). Returns the txid.
 async function exactSendUtxo({ pin, token, network, amount, to }) {
@@ -1412,6 +1420,81 @@ async function exactSendUtxo({ pin, token, network, amount, to }) {
   if (!bres.ok || bdata.error || !bdata.txid) throw new Error(bdata.detail || bdata.error || "broadcast failed");
   const fee = `${(signed.fee / 1e8).toFixed(8)} ${network.feeSymbol || token.symbol}`;
   return { hash: bdata.txid, fee };
+}
+
+// Other non-EVM chains we can sign + broadcast: network id -> sender field used
+// for the funding/source address.
+const EXACT_CHAIN_SEND = { solana: "solAddress", xrp: "xrpAddress", tron: "trxAddress" };
+
+// Solana native SOL transfer (sign client-side, broadcast via Ankr RPC proxy).
+async function exactSendSol({ pin, amount, to }) {
+  const crypto = exactCrypto();
+  if (!crypto || !crypto.solTransfer) throw new Error("signer unavailable");
+  const mnemonic = await exactDecryptSeed(pin);
+  if (!mnemonic) throw new Error("seed unavailable");
+  const bh = await exactRpc("solana", "getLatestBlockhash", [{ commitment: "finalized" }]);
+  const recentBlockhash = bh && bh.value && bh.value.blockhash;
+  if (!recentBlockhash) throw new Error("no recent blockhash");
+  const lamports = Math.round(Number(amount) * 1e9);
+  if (!(lamports > 0)) throw new Error("invalid amount");
+  const built = crypto.solTransfer({ mnemonic, to, lamports: String(lamports), recentBlockhash });
+  const sig = await exactRpc("solana", "sendTransaction", [built.raw, { encoding: "base64" }]);
+  return { hash: typeof sig === "string" ? sig : built.txid, fee: "≈ 0.000005 SOL" };
+}
+
+async function exactXrpRpc(method, params) {
+  const res = await fetch("/api/xrp", { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify({ method, params }) });
+  if (!res.ok) throw new Error(`xrp rpc HTTP ${res.status}`);
+  const data = await res.json();
+  if (data && data.error && !data.result) throw new Error(String(data.error));
+  return data.result || data;
+}
+
+// XRP Payment (sign client-side, submit via rippled proxy).
+async function exactSendXrp({ pin, amount, to }) {
+  const crypto = exactCrypto();
+  if (!crypto || !crypto.xrpSignPayment) throw new Error("signer unavailable");
+  const mnemonic = await exactDecryptSeed(pin);
+  if (!mnemonic) throw new Error("seed unavailable");
+  const account = exactRuntime.xrpAddress;
+  const info = await exactXrpRpc("account_info", [{ account, ledger_index: "current" }]);
+  const sequence = info && info.account_data && info.account_data.Sequence;
+  if (sequence == null) throw new Error("XRP account not found or unfunded");
+  const ledger = await exactXrpRpc("ledger_current", [{}]);
+  const lastLedgerSequence = ((ledger && ledger.ledger_current_index) || 0) + 20;
+  const amountDrops = String(Math.round(Number(amount) * 1e6));
+  const signed = crypto.xrpSignPayment({ mnemonic, account, destination: to, amountDrops, fee: "12", sequence, lastLedgerSequence });
+  const submit = await exactXrpRpc("submit", [{ tx_blob: signed.blob }]);
+  const code = submit && submit.engine_result;
+  if (!code || !/^(tes|tec|ter)/.test(code)) throw new Error(`XRP submit: ${code || "failed"}`);
+  return { hash: signed.hash, fee: "0.000012 XRP" };
+}
+
+async function exactTronRpc(action, body) {
+  const res = await fetch(`/api/tron?action=${encodeURIComponent(action)}`, { method: "POST", headers: { "content-type": "application/json" }, body: JSON.stringify(body) });
+  if (!res.ok) throw new Error(`tron rpc HTTP ${res.status}`);
+  return res.json();
+}
+
+// Tron TRX transfer: node builds the raw tx, we sign its txID, node broadcasts.
+async function exactSendTron({ pin, amount, to }) {
+  const crypto = exactCrypto();
+  if (!crypto || !crypto.tronSignTxid) throw new Error("signer unavailable");
+  const mnemonic = await exactDecryptSeed(pin);
+  if (!mnemonic) throw new Error("seed unavailable");
+  const owner = exactRuntime.trxAddress;
+  const amountSun = Math.round(Number(amount) * 1e6);
+  if (!(amountSun > 0)) throw new Error("invalid amount");
+  const created = await exactTronRpc("create", { owner_address: owner, to_address: to, amount: amountSun, visible: true });
+  if (!created || !created.txID || created.Error) throw new Error(created && created.Error ? created.Error : "tron build failed");
+  const signature = crypto.tronSignTxid(mnemonic, created.txID);
+  const result = await exactTronRpc("broadcast", { ...created, signature: [signature] });
+  if (!result || result.result !== true) {
+    let msg = (result && result.message) || "broadcast failed";
+    try { msg = result && result.message ? decodeURIComponent(escape(atob(result.message))) : msg; } catch { /* keep */ }
+    throw new Error(`tron: ${msg}`);
+  }
+  return { hash: created.txID, fee: "≈ 1.1 TRX" };
 }
 
 // Maps a (non-EVM) network id to the runtime field holding its derived address.
@@ -3034,8 +3117,8 @@ exactRoot.addEventListener("click", (event) => {
       exactRender();
       return;
     }
-    // Live wallet can only sign for networks we actually support (EVM + UTXO).
-    if (exactIsLive() && !EXACT_EVM_CHAIN_IDS[network.id] && !EXACT_UTXO_SEND[network.id]) {
+    // Live wallet can only sign for networks we actually support.
+    if (exactIsLive() && !EXACT_EVM_CHAIN_IDS[network.id] && !EXACT_UTXO_SEND[network.id] && !EXACT_CHAIN_SEND[network.id]) {
       exactState.toast = `Sending ${token.symbol} on ${network.label} isn't available yet`;
       exactRender();
       return;

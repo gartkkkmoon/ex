@@ -16,6 +16,7 @@ const CHAINS = {
   gnosis: "gnosis",
   linea: "linea",
   scroll: "scroll",
+  solana: "solana",
 };
 
 export default async function handler(req, res) {

@@ -19,6 +19,8 @@
     "@scure/bip39": "^1",
     "@scure/btc-signer": "^2.2.0",
     "esbuild": "^0.25.0",
-    "qrcode-generator": "^2.0.4"
+    "qrcode-generator": "^2.0.4",
+    "ripple-binary-codec": "^2.8.0",
+    "ripple-keypairs": "^3.0.0"
   }
 }

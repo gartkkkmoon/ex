@@ -16,6 +16,8 @@ import { bytesToHex, hexToBytes as nobleHexToBytes } from "@noble/hashes/utils";
 import { bech32 } from "@scure/base";
 import qrcode from "qrcode-generator";
 import * as btc from "@scure/btc-signer";
+import * as rippleCodec from "ripple-binary-codec";
+import * as rippleKeypairs from "ripple-keypairs";
 
 // Proper QR encoder (byte mode, error-correction level M, auto version).
 // Returns a square matrix of booleans (true = dark module) so the UI can draw a
@@ -175,6 +177,42 @@ function base58check(payload, alphabet = B58) {
   return base58encode(concatBytes([payload, checksum]), alphabet);
 }
 
+function base58decode(str, alphabet = B58) {
+  const map = {};
+  for (let i = 0; i < alphabet.length; i += 1) map[alphabet[i]] = i;
+  const bytes = [0];
+  for (const ch of String(str)) {
+    let carry = map[ch];
+    if (carry === undefined) throw new Error("invalid base58 char");
+    for (let j = 0; j < bytes.length; j += 1) { carry += bytes[j] * 58; bytes[j] = carry & 0xff; carry >>= 8; }
+    while (carry) { bytes.push(carry & 0xff); carry >>= 8; }
+  }
+  for (let k = 0; k < str.length && str[k] === alphabet[0]; k += 1) bytes.push(0);
+  return new Uint8Array(bytes.reverse());
+}
+
+function toBase64(bytes) {
+  if (typeof btoa === "function") {
+    let s = "";
+    for (const b of bytes) s += String.fromCharCode(b);
+    return btoa(s);
+  }
+  return Buffer.from(bytes).toString("base64");
+}
+
+// Solana shortvec (compact-u16) length prefix.
+function solShortVec(len) {
+  const out = [];
+  let rem = len;
+  for (;;) {
+    let elem = rem & 0x7f;
+    rem >>= 7;
+    if (rem === 0) { out.push(elem); break; }
+    out.push(elem | 0x80);
+  }
+  return Uint8Array.from(out);
+}
+
 // --- SLIP-0010 hardened ed25519 derivation (for Solana) ---------------------
 function ser32(index) {
   const out = new Uint8Array(4);
@@ -286,6 +324,80 @@ function buildUtxoTransfer({ coin, mnemonic, utxos, toAddress, amountSats, feePe
   return { raw: bytesToHex(tx.extract()), txid: tx.id, fee: Number(selected.fee) };
 }
 
+// Build + sign a Solana native SOL transfer (legacy message). Returns
+// { raw (base64 tx), txid (base58 signature) } ready for sendTransaction.
+function solTransfer({ mnemonic, to, lamports, recentBlockhash }) {
+  const seed = mnemonicToSeedSync(String(mnemonic).trim());
+  const priv = slip10Ed25519(seed, [44, 501, 0, 0]);
+  const fromPub = ed25519.getPublicKey(priv); // 32 bytes
+  const toPub = base58decode(to);
+  if (toPub.length !== 32) throw new Error("invalid Solana recipient");
+  const sysProgram = new Uint8Array(32); // System Program (all-zero id)
+  const accounts = [fromPub, toPub, sysProgram];
+  const header = Uint8Array.of(1, 0, 1); // 1 signer, 0 ro-signed, 1 ro-unsigned
+  // SystemProgram transfer: u32 index 2 + u64 lamports (LE)
+  const data = new Uint8Array(12);
+  data[0] = 2;
+  let v = BigInt(lamports);
+  if (v <= 0n) throw new Error("invalid amount");
+  for (let i = 0; i < 8; i += 1) { data[4 + i] = Number(v & 0xffn); v >>= 8n; }
+  const instruction = concatBytes([
+    Uint8Array.of(2), // programIdIndex (sysProgram)
+    solShortVec(2), Uint8Array.of(0, 1), // account indexes: from, to
+    solShortVec(data.length), data,
+  ]);
+  const message = concatBytes([
+    header,
+    solShortVec(accounts.length), ...accounts,
+    base58decode(recentBlockhash),
+    solShortVec(1), instruction,
+  ]);
+  const signature = ed25519.sign(message, priv); // 64 bytes
+  const tx = concatBytes([solShortVec(1), signature, message]);
+  return { raw: toBase64(tx), txid: base58encode(signature) };
+}
+
+// Sign a Tron transaction id (the node builds the raw tx; we sign its txID).
+// Returns the 65-byte recoverable signature as hex (r||s||v), as Tron expects.
+function tronSignTxid(mnemonic, txID) {
+  const seed = mnemonicToSeedSync(String(mnemonic).trim());
+  const child = HDKey.fromMasterSeed(seed).derive("m/44'/195'/0'/0/0");
+  const sig = secp256k1.sign(hexToBytes(txID), child.privateKey); // txID is sha256(raw_data)
+  const r = sig.r.toString(16).padStart(64, "0");
+  const s = sig.s.toString(16).padStart(64, "0");
+  const v = (sig.recovery + 27).toString(16).padStart(2, "0");
+  return r + s + v;
+}
+
+// Build + sign an XRP Payment. The node provides Sequence / LastLedgerSequence
+// / Fee; we serialize canonically (ripple-binary-codec) and sign secp256k1.
+// Returns { blob (tx_blob hex), hash (txid) }.
+function xrpSignPayment({ mnemonic, account, destination, amountDrops, fee, sequence, lastLedgerSequence, destinationTag }) {
+  const child = HDKey.fromMasterSeed(mnemonicToSeedSync(String(mnemonic).trim())).derive("m/44'/144'/0'/0/0");
+  const privHex = bytesToHex(child.privateKey).toUpperCase();
+  const pubHex = bytesToHex(secp256k1.getPublicKey(child.privateKey, true)).toUpperCase();
+  const tx = {
+    TransactionType: "Payment",
+    Account: account,
+    Destination: destination,
+    Amount: String(amountDrops),
+    Fee: String(fee),
+    Flags: 2147483648, // tfFullyCanonicalSig
+    Sequence: Number(sequence),
+    LastLedgerSequence: Number(lastLedgerSequence),
+    SigningPubKey: pubHex,
+  };
+  if (destinationTag !== undefined && destinationTag !== null && destinationTag !== "") {
+    tx.DestinationTag = Number(destinationTag);
+  }
+  const signingData = rippleCodec.encodeForSigning(tx);
+  tx.TxnSignature = rippleKeypairs.sign(signingData, `00${privHex}`);
+  const blob = rippleCodec.encode(tx);
+  const prefix = Uint8Array.of(0x54, 0x58, 0x4e, 0x00); // 'TXN\0'
+  const hash = bytesToHex(sha512(concatBytes([prefix, hexToBytes(blob)])).slice(0, 32)).toUpperCase();
+  return { blob, hash };
+}
+
 const api = {
   generateMnemonic: (words = 12) => genMnemonic(wordlist, words === 24 ? 256 : 128),
   validateMnemonic: (m) => {
@@ -302,6 +414,9 @@ const api = {
   buildEvmTransfer,
   erc20TransferData,
   buildUtxoTransfer,
+  solTransfer,
+  tronSignTxid,
+  xrpSignPayment,
   qrMatrix,
 };
 

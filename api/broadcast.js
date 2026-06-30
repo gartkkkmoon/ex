@@ -13,10 +13,36 @@ export default async function handler(req, res) {
     return;
   }
   const coin = String((req.query && req.query.coin) || "").toLowerCase();
-  const base = SOURCES[coin];
   const body = typeof req.body === "string" ? safeParse(req.body) : (req.body || {});
   const raw = String(body.raw || "").trim();
-  if (!base || !/^[0-9a-fA-F]+$/.test(raw)) {
+  if (!/^[0-9a-fA-F]+$/.test(raw)) {
+    res.status(200).json({ error: "bad request" });
+    return;
+  }
+  // Dogecoin broadcasts via Blockchair's push endpoint.
+  if (coin === "dogecoin") {
+    try {
+      const r = await fetch("https://api.blockchair.com/dogecoin/push/transaction", {
+        method: "POST",
+        headers: { "content-type": "application/x-www-form-urlencoded" },
+        body: `data=${raw}`,
+      });
+      const d = await r.json().catch(() => ({}));
+      const txid = d && d.data && d.data.transaction_hash;
+      if (!txid) {
+        console.error("[api/broadcast] dogecoin:", JSON.stringify(d).slice(0, 200));
+        res.status(200).json({ error: "broadcast failed" });
+        return;
+      }
+      res.status(200).json({ txid });
+    } catch (error) {
+      console.error("[api/broadcast] dogecoin:", error && error.message);
+      res.status(200).json({ error: "upstream" });
+    }
+    return;
+  }
+  const base = SOURCES[coin];
+  if (!base) {
     res.status(200).json({ error: "bad request" });
     return;
   }
