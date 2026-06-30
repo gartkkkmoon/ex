@@ -7997,15 +7997,16 @@ exactFetchPrices();
 
 // Poll the mempool feed so pending receives appear without a manual refresh,
 // and refresh spot prices so USD values stay accurate.
+function exactLiveActive() {
+  return exactIsLive() && exactRuntime.unlocked && !exactState.locked;
+}
 if (typeof setInterval === "function") {
-  setInterval(() => {
-    if (exactIsLive() && exactRuntime.unlocked && !exactState.locked) exactFetchPending();
-  }, 30000);
+  // Mempool pending receives — quick cadence so they pop without interaction.
+  setInterval(() => { if (exactLiveActive()) exactFetchPending(); }, 20000);
+  // Confirmed balances + transaction history so the wallet stays current on
+  // its own (this is why it didn't update automatically before).
+  setInterval(() => { if (exactLiveActive()) { exactFetchChainBalances(); exactFetchHistory(); } }, 35000);
   setInterval(() => { exactFetchPrices(); }, 60000);
-  // Periodic full balance refresh so confirmed non-EVM receives appear.
-  setInterval(() => {
-    if (exactIsLive() && exactRuntime.unlocked && !exactState.locked) exactFetchChainBalances();
-  }, 45000);
 }
 
 window.EXX_EXACT_DEBUG = { exactState, exactTokens, exactIcon, exactRender, exactRuntime, exactSyncLiveBalances };

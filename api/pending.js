@@ -75,30 +75,34 @@ async function ethPendingViaTxpool(want, dbg) {
     "https://rpc.mevblocker.io",
     "https://eth.drpc.org",
   ];
-  for (const endpoint of endpoints) {
-    try {
-      const data = await fetchJson(endpoint, { jsonrpc: "2.0", id: 1, method: "txpool_content", params: [] }, 8000);
-      const result = data && data.result;
-      const buckets = result && (result.pending || result.queued) ? [result.pending, result.queued] : null;
-      if (!buckets) { dbg.txpool = (dbg.txpool || "") + `${endpoint}:no-txpool;`; continue; }
-      const out = [];
-      const seen = new Set();
-      for (const bucket of buckets) {
-        for (const byNonce of Object.values(bucket || {})) {
-          for (const tx of Object.values(byNonce || {})) {
-            const entry = matchIncoming(tx, want);
-            if (entry && entry.hash && !seen.has(entry.hash)) { seen.add(entry.hash); out.push(entry); }
-          }
-        }
+  // Race all nodes in parallel; first one that actually returns a txpool wins.
+  // (Sequential tries would stack timeouts and exceed the function limit.)
+  const attempts = endpoints.map(async (endpoint) => {
+    const data = await fetchJson(endpoint, { jsonrpc: "2.0", id: 1, method: "txpool_content", params: [] }, 5000);
+    const result = data && data.result;
+    if (!result || (!result.pending && !result.queued)) throw new Error(`${endpoint}:no-txpool`);
+    return { endpoint, result };
+  });
+  let winner;
+  try {
+    winner = await Promise.any(attempts);
+  } catch {
+    dbg.txpool = "no node exposed txpool";
+    return null;
+  }
+  const out = [];
+  const seen = new Set();
+  for (const bucket of [winner.result.pending, winner.result.queued]) {
+    for (const byNonce of Object.values(bucket || {})) {
+      for (const tx of Object.values(byNonce || {})) {
+        const entry = matchIncoming(tx, want);
+        if (entry && entry.hash && !seen.has(entry.hash)) { seen.add(entry.hash); out.push(entry); }
       }
-      dbg.txpoolSource = endpoint;
-      dbg.txpoolMatched = out.length;
-      return out; // a working txpool node — authoritative
-    } catch (error) {
-      dbg.txpool = (dbg.txpool || "") + `${endpoint}:${error && error.message};`;
     }
   }
-  return null; // no node exposed txpool
+  dbg.txpoolSource = winner.endpoint;
+  dbg.txpoolMatched = out.length;
+  return out;
 }
 
 // Fallback: the "pending" block (only top-gas txs that will be mined next).

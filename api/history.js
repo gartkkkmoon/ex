@@ -55,9 +55,14 @@ async function ankrCall(method, params) {
 async function evmHistory(address, out, dbg) {
   const want = address.toLowerCase();
   const blockchain = Object.keys(ANKR_NET);
-  // Token transfers first (USDT/USDC/etc) — usually the most relevant.
+  // Run token + native lookups in parallel so they don't stack timeouts.
+  await Promise.allSettled([evmTokenHistory(want, blockchain, out, dbg), evmNativeHistory(want, blockchain, out, dbg)]);
+}
+
+async function evmTokenHistory(want, blockchain, out, dbg) {
+  // Token transfers (USDT/USDC/etc) — usually the most relevant.
   try {
-    const res = await ankrCall("ankr_getTokenTransfers", { address: [address], blockchain, pageSize: 25, descOrder: true });
+    const res = await ankrCall("ankr_getTokenTransfers", { address: [want], blockchain, pageSize: 25, descOrder: true });
     let n = 0;
     for (const t of res.transfers || []) {
       const to = (t.toAddress || "").toLowerCase();
@@ -76,9 +81,12 @@ async function evmHistory(address, out, dbg) {
     }
     dbg.evmTokens = n;
   } catch (error) { dbg.evmTokensErr = error && error.message; console.error("[api/history] evm tokens:", error && error.message); }
+}
+
+async function evmNativeHistory(want, blockchain, out, dbg) {
   // Native transfers (ETH / BNB / …)
   try {
-    const res = await ankrCall("ankr_getTransactionsByAddress", { address: [address], blockchain, pageSize: 20, descOrder: true });
+    const res = await ankrCall("ankr_getTransactionsByAddress", { address: [want], blockchain, pageSize: 20, descOrder: true });
     let n = 0;
     for (const tx of res.transactions || []) {
       let wei = 0n;
