@@ -5077,6 +5077,11 @@ const EXACT_PIN_LENGTH = 6;
 // Live wallet runtime (self-contained, no ES imports so the inline bundle works)
 // ---------------------------------------------------------------------------
 const EXACT_RUNTIME_KEY = "exx.exact.runtime.v1";
+// Last-known activity list, cached separately from the runtime blob so it can
+// be shown instantly on reopen instead of flashing empty while the fresh
+// pending/history fetch resolves in the background.
+const EXACT_TX_CACHE_KEY = "exx.exact.transactions.v1";
+const EXACT_TX_CACHE_LIMIT = 60;
 
 const exactRuntime = {
   mode: "preview", // "preview" (placeholder demo data) | "live" (real Ankr balances)
@@ -5230,6 +5235,34 @@ function exactPersistRuntime() {
   }
 }
 
+// Cache the current activity list so it shows immediately on reopen instead
+// of flashing empty while the fresh pending/history fetch resolves. Scoped to
+// the current address so a different restored/created wallet never inherits
+// another wallet's cached transactions.
+function exactPersistTransactions() {
+  if (!exactIsLive() || !exactRuntime.address) return;
+  try {
+    window.localStorage?.setItem(EXACT_TX_CACHE_KEY, JSON.stringify({
+      address: exactRuntime.address,
+      transactions: exactState.transactions.slice(0, EXACT_TX_CACHE_LIMIT),
+    }));
+  } catch {
+    /* storage unavailable — keep in-memory only */
+  }
+}
+
+function exactRestoreTransactionsCache() {
+  try {
+    const raw = window.localStorage?.getItem(EXACT_TX_CACHE_KEY);
+    if (!raw) return [];
+    const saved = JSON.parse(raw);
+    if (!saved || saved.address !== exactRuntime.address || !Array.isArray(saved.transactions)) return [];
+    return saved.transactions;
+  } catch {
+    return [];
+  }
+}
+
 function exactRestoreRuntime() {
   let saved;
   try {
@@ -5256,8 +5289,9 @@ function exactRestoreRuntime() {
   exactRuntime.pinHash = saved.pinHash || "";
   exactRuntime.encryptedSeed = saved.encryptedSeed && saved.encryptedSeed.cipher ? saved.encryptedSeed : null;
   if (exactRuntime.mode === "live") {
-    // Don't show demo activity in a restored live wallet.
-    exactState.transactions = [];
+    // Show the last-known activity immediately instead of an empty flash —
+    // the fresh pending/history fetch reconciles it shortly after unlock.
+    exactState.transactions = exactRestoreTransactionsCache();
   }
   if (exactRuntime.unlocked) {
     exactState.passwordSet = true;
@@ -5407,7 +5441,10 @@ async function exactFetchPending() {
     console.error("[exx] pending fetch failed:", error);
     return;
   }
-  if (exactApplyPending(list)) exactRender();
+  if (exactApplyPending(list)) {
+    exactPersistTransactions();
+    exactRender();
+  }
 }
 
 function exactApplyPending(list) {
@@ -5483,7 +5520,10 @@ async function exactFetchHistory() {
     console.error("[exx] history fetch failed:", error);
     return;
   }
-  if (exactMergeHistory(list)) exactRender();
+  if (exactMergeHistory(list)) {
+    exactPersistTransactions();
+    exactRender();
+  }
 }
 
 function exactMergeHistory(list) {
@@ -5582,7 +5622,10 @@ async function exactCheckPendingHealth() {
       changed = true;
     }
   }));
-  if (changed) exactRender();
+  if (changed) {
+    exactPersistTransactions();
+    exactRender();
+  }
 }
 
 function exactClearChainAddresses() {
@@ -5604,6 +5647,7 @@ function exactEnterLiveWallet(address) {
   // A live wallet shows only its real activity (sends + mempool receives).
   exactState.transactions = [];
   exactPersistRuntime();
+  exactPersistTransactions();
 }
 
 function exactEnterPreviewWallet() {
@@ -5638,8 +5682,10 @@ function exactResetWallet() {
   exactState.pinFirst = "";
   exactState.pinError = "";
   exactState.pendingSend = null;
+  exactState.transactions = [];
   try {
     window.localStorage?.removeItem(EXACT_RUNTIME_KEY);
+    window.localStorage?.removeItem(EXACT_TX_CACHE_KEY);
   } catch {
     /* ignore */
   }
@@ -5792,6 +5838,7 @@ async function exactBroadcastAndRecord(senderFn, { token, network, pending }) {
     exactState.screen = "txdetail";
     exactRuntime.loading = false;
     exactState.toast = "Sent · Pending confirmation";
+    exactPersistTransactions();
     exactRender();
     setTimeout(() => { exactSyncLiveBalances(); }, 4000);
   } catch (error) {
@@ -5801,6 +5848,7 @@ async function exactBroadcastAndRecord(senderFn, { token, network, pending }) {
     exactState.selectedTx = tx.id;
     exactState.screen = "txdetail";
     exactState.toast = "Transaction failed";
+    exactPersistTransactions();
     exactRender();
   }
 }
